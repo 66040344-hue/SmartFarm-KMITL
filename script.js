@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Your web app's Firebase configuration
@@ -21,6 +21,33 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Theme Engine (Light Mode Default)
+    const themeToggleBtn = document.getElementById("theme-toggle-btn");
+    const themeIconSun = document.getElementById("theme-icon-sun");
+    const themeIconMoon = document.getElementById("theme-icon-moon");
+
+    let currentTheme = localStorage.getItem("kale_theme") || "light";
+    applyTheme(currentTheme);
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener("click", () => {
+            currentTheme = currentTheme === "light" ? "dark" : "light";
+            localStorage.setItem("kale_theme", currentTheme);
+            applyTheme(currentTheme);
+        });
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+        if (theme === "dark") {
+            if (themeIconSun) themeIconSun.style.display = "none";
+            if (themeIconMoon) themeIconMoon.style.display = "block";
+        } else {
+            if (themeIconSun) themeIconSun.style.display = "block";
+            if (themeIconMoon) themeIconMoon.style.display = "none";
+        }
+    }
+
     // Sensor Elements
     const moistureVal = document.getElementById("moisture-val");
     const moistureBar = document.getElementById("moisture-bar");
@@ -42,8 +69,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const pumpStatusDot = document.getElementById("pump-status-dot");
     const pumpStatusText = document.getElementById("pump-status-text");
     
-    const thresholdSlider = document.getElementById("threshold-slider");
-    const thresholdDisplay = document.getElementById("threshold-display");
+    const thresholdMinInput = document.getElementById("threshold-min");
+    const thresholdMaxInput = document.getElementById("threshold-max");
+    const saveThresholdBtn = document.getElementById("save-threshold-btn");
 
     const statusDot = document.getElementById("connection-status");
     const statusText = document.getElementById("connection-text");
@@ -65,7 +93,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // State
     let isAutoMode = true;
     let isWatering = false;
-    let threshold = 40;
+    let thresholdMin = 30;
+    let thresholdMax = 60;
     let lastHeartbeatTime = Date.now();
     let isDeviceOffline = false;
     let isAuthenticated = false;
@@ -86,7 +115,9 @@ document.addEventListener("DOMContentLoaded", () => {
             
             btnModeManual.disabled = false;
             btnModeAuto.disabled = false;
-            thresholdSlider.disabled = false;
+            thresholdMinInput.disabled = false;
+            thresholdMaxInput.disabled = false;
+            saveThresholdBtn.disabled = false;
             
             updateUIVisibility();
         } else {
@@ -100,7 +131,9 @@ document.addEventListener("DOMContentLoaded", () => {
             btnModeManual.disabled = true;
             btnModeAuto.disabled = true;
             waterBtn.disabled = true;
-            thresholdSlider.disabled = true;
+            thresholdMinInput.disabled = true;
+            thresholdMaxInput.disabled = true;
+            saveThresholdBtn.disabled = true;
         }
     });
 
@@ -169,13 +202,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     moistureVal.innerText = data.soil_moisture;
                     moistureBar.style.width = `${data.soil_moisture}%`;
                     
-                    if (data.soil_moisture < threshold) {
+                    if (data.soil_moisture < thresholdMin) {
                         moistureStatusText.innerText = "ดินแห้งเกินไป";
                         moistureStatusText.className = "red-text";
                         moistureStatusDot.className = "dot red";
-                    } else if (data.soil_moisture >= threshold && data.soil_moisture <= 60) {
+                    } else if (data.soil_moisture >= thresholdMin && data.soil_moisture <= thresholdMax) {
                         moistureStatusText.innerText = "เหมาะสม";
-                        moistureStatusText.className = "blue-text"; // Or green
+                        moistureStatusText.className = "blue-text";
                         moistureStatusDot.className = "dot green";
                     } else {
                         moistureStatusText.innerText = "ชื้นเกินไป";
@@ -218,10 +251,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     if(isAuthenticated) updateUIVisibility();
                     updateModeButtonsUI();
                 }
-                if (data.threshold !== undefined) {
-                    threshold = data.threshold;
-                    thresholdSlider.value = threshold;
-                    thresholdDisplay.innerText = `${threshold}%`;
+                if (data.threshold_min !== undefined) {
+                    thresholdMin = data.threshold_min;
+                    thresholdMinInput.value = data.threshold_min;
+                }
+                if (data.threshold_max !== undefined) {
+                    thresholdMax = data.threshold_max;
+                    thresholdMaxInput.value = data.threshold_max;
                 }
             }
         });
@@ -235,12 +271,22 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isWatering) {
                 pumpStatusText.innerText = "กำลังรดน้ำ";
                 pumpStatusDot.className = "dot green";
-                waterBtn.innerHTML = '<span class="icon">⏹</span> ปิดปั๊มน้ำ';
+                waterBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="6" width="12" height="12" rx="1"/>
+                    </svg>
+                    <span>ปิดปั๊มน้ำ</span>
+                `;
                 waterBtn.classList.add("active-pump");
             } else {
                 pumpStatusText.innerText = "ปิดอยู่";
                 pumpStatusDot.className = "dot gray";
-                waterBtn.innerHTML = '<span class="icon">▶</span> เปิดปั๊มน้ำ';
+                waterBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    <span>เปิดปั๊มน้ำ</span>
+                `;
                 waterBtn.classList.remove("active-pump");
             }
         });
@@ -258,17 +304,60 @@ document.addEventListener("DOMContentLoaded", () => {
         set(ref(db, 'state/config/auto_mode'), true);
     });
 
-    // อัปเดตตัวเลขตอนที่กำลังเลื่อน
-    thresholdSlider.addEventListener("input", (e) => {
-        thresholdDisplay.innerText = `${e.target.value}%`;
-    });
-
-    // บันทึกอัตโนมัติเมื่อปล่อยนิ้วจากการเลื่อน
-    thresholdSlider.addEventListener("change", (e) => {
+    saveThresholdBtn.addEventListener("click", () => {
         if(!isAuthenticated) return;
-        const newThreshold = parseInt(e.target.value);
-        set(ref(db, 'state/config/threshold'), newThreshold).catch(err => {
+        const minVal = parseInt(thresholdMinInput.value);
+        const maxVal = parseInt(thresholdMaxInput.value);
+        
+        if (minVal >= maxVal) {
+            alert("ค่า Min (ความชื้นต่ำสุด) ต้องน้อยกว่าค่า Max (ความชื้นสูงสุด) ครับ");
+            return;
+        }
+
+        saveThresholdBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>กำลังบันทึก...</span>
+        `;
+        
+        const updates = {};
+        updates['state/config/threshold_min'] = minVal;
+        updates['state/config/threshold_max'] = maxVal;
+
+        update(ref(db), updates).then(() => {
+            setTimeout(() => {
+                saveThresholdBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>บันทึกเกณฑ์สำเร็จ!</span>
+                `;
+                setTimeout(() => {
+                    saveThresholdBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        <span>บันทึกเกณฑ์ความชื้น</span>
+                    `;
+                }, 1500);
+            }, 300);
+        }).catch(err => {
             console.error("Failed to save threshold", err);
+            saveThresholdBtn.innerHTML = "<span>เกิดข้อผิดพลาด!</span>";
+            setTimeout(() => {
+                saveThresholdBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    <span>บันทึกเกณฑ์ความชื้น</span>
+                `;
+            }, 2000);
         });
     });
 
@@ -276,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if(!isAuthenticated || isAutoMode) return; 
         
         const newState = !isWatering;
-        waterBtn.innerHTML = "Processing...";
+        waterBtn.innerHTML = "<span>Processing...</span>";
         
         set(ref(db, 'state/control/pump_state'), newState).catch(err => {
             console.error("Failed to toggle pump", err);
