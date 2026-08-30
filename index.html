@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kale Smart Farm</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="login-modal" class="login-overlay" style="display: none;">
+        <div class="login-card">
+            <h2>🔒 เข้าสู่ระบบ</h2>
+            <p class="subtitle">เพื่อใช้งานโหมดควบคุม</p>
+            <div class="input-group">
+                <input type="email" id="login-email" placeholder="อีเมล (Email)" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="login-password" placeholder="รหัสผ่าน (Password)" required>
+            </div>
+            <p id="login-error" class="error-text"></p>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-login-submit" class="btn-primary" style="flex: 1;">Login</button>
+                <button id="btn-login-cancel" class="btn-secondary" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container" id="app-container">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="logo-section">
+                <div class="logo-icon">🍃</div>
+                <div class="logo-text">
+                    <h1>Kale Smart Farm</h1>
+                    <p>Smart Irrigation System</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-show-login" class="btn-icon" title="Login">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+                </button>
+                <button id="btn-logout" class="btn-icon" style="display: none; color: #ef4444;" title="Logout">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Hero Banner -->
+        <section class="hero-banner">
+            <!-- Fallback to Unsplash if Farm.png doesn't exist locally yet -->
+            <img src="Farm.png" alt="Farm Background" class="hero-bg" onerror="this.src='https://images.unsplash.com/photo-1595841696677-6489ff3f8cd1?auto=format&fit=crop&q=80&w=800';">
+            <div class="hero-content">
+                <div class="weather-info">
+                    <span class="weather-icon">☀️</span>
+                    <div class="weather-text">
+                        <span class="temp" id="hero-temp">--°C</span>
+                        <span class="desc">อุณหภูมิฟาร์ม</span>
+                    </div>
+                </div>
+                <div class="cloud-status" id="cloud-status">
+                    <span id="connection-status" class="status-dot connecting"></span>
+                    <span id="connection-text">Connecting...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sensor Cards -->
+        <section class="sensor-grid">
+            <!-- Moisture -->
+            <div class="sensor-card">
+                <div class="sensor-header">
+                    <div class="icon-circle blue">💧</div>
+                    <span>SOIL MOISTURE</span>
+                </div>
+                <div class="sensor-value blue-text"><span id="moisture-val">--</span><span class="unit">%</span></div>
+                <div class="sensor-status" id="moisture-status">
+                    <span class="dot gray" id="moisture-status-dot"></span> <span id="moisture-status-text">รอข้อมูล...</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar blue-bg" id="moisture-bar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Temperature -->
+            <div class="sensor-card">
+                <div class="sensor-header">
+                    <div class="icon-circle orange">🌡️</div>
+                    <span>TEMPERATURE</span>
+                </div>
+                <div class="sensor-value orange-text"><span id="temp-val">--</span><span class="unit">°C</span></div>
+                <div class="sensor-status" id="temp-status">
+                    <span class="dot red" style="display:none;" id="temp-err-dot"></span> <span id="temp-status-text" class="red-text" style="display:none;">ไม่พบเซนเซอร์</span>
+                </div>
+            </div>
+
+            <!-- Humidity -->
+            <div class="sensor-card">
+                <div class="sensor-header">
+                    <div class="icon-circle light-blue">☁️</div>
+                    <span>HUMIDITY</span>
+                </div>
+                <div class="sensor-value light-blue-text"><span id="humid-val">--</span><span class="unit">%</span></div>
+                <div class="sensor-status" id="humid-status">
+                    <span class="dot red" style="display:none;" id="humid-err-dot"></span> <span id="humid-status-text" class="red-text" style="display:none;">ไม่พบเซนเซอร์</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controls Section -->
+        <div class="controls-wrapper">
+            <!-- Lock Overlay -->
+            <div id="control-lock-overlay" class="control-lock-overlay">
+                <div class="lock-message">
+                    🔒<br>กรุณา Login เพื่อตั้งค่า
+                </div>
+            </div>
+
+            <section class="control-grid">
+                <!-- Mode Selection -->
+                <div class="control-box">
+                    <div class="box-header">
+                        <span class="box-icon">⚙️</span> โหมดการทำงาน
+                    </div>
+                    <div class="mode-buttons">
+                        <button id="btn-mode-manual" class="mode-btn" disabled>
+                            <span class="icon">👆</span> Manual
+                        </button>
+                        <button id="btn-mode-auto" class="mode-btn active" disabled>
+                            <span class="icon">🌿</span> Auto
+                        </button>
+                    </div>
+                    <p class="box-hint">ระบบจะรดน้ำอัตโนมัติตามความชื้นในดิน</p>
+                </div>
+
+                <!-- Water Pump -->
+                <div class="control-box">
+                    <div class="box-header">
+                        <span class="box-icon">💧</span> ปั๊มน้ำ
+                    </div>
+                    <div class="pump-status">
+                        <span id="pump-status-dot" class="dot gray"></span> 
+                        <span id="pump-status-text">ปิดอยู่</span>
+                    </div>
+                    <button id="water-btn" class="btn-primary outline" disabled>
+                        <span class="icon">▶</span> เปิดปั๊มน้ำ
+                    </button>
+                </div>
+            </section>
+
+            <!-- Threshold Settings -->
+            <section class="threshold-box control-box">
+                <div class="box-header space-between">
+                    <div><span class="box-icon">🎯</span> เกณฑ์ความชื้นอัตโนมัติ</div>
+                    <div class="current-threshold">ปัจจุบัน: <span id="threshold-display">40%</span></div>
+                </div>
+                
+                <div class="slider-wrapper">
+                    <input type="range" min="0" max="100" value="40" class="styled-slider" id="threshold-slider" disabled>
+                    <div class="slider-labels">
+                        <span>0%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+                <p class="box-hint">ปั๊มน้ำจะทำงานเมื่อความชื้นในดินต่ำกว่าเกณฑ์ที่ตั้งไว้</p>
+
+                <div class="recommend-box">
+                    <div class="rec-icon">🌱</div>
+                    <div class="rec-text">
+                        <strong>ช่วงแนะนำ 30% - 60%</strong>
+                        <p>เหมาะสมสำหรับการเจริญเติบโตของผักเคล</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
