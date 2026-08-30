@@ -634,9 +634,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const newState = !isWatering;
         waterBtn.innerHTML = "<span>Processing...</span>";
         
-        set(ref(db, 'state/control/pump_state'), newState).then(() => {
+        const timerSec = newState ? (selectedTimerMinutes * 60) : 0;
+        const updates = {};
+        updates['state/control/pump_state'] = newState;
+        updates['state/control/pump_timer_sec'] = timerSec;
+
+        update(ref(db), updates).then(() => {
             if (newState && selectedTimerMinutes > 0) {
                 startCountdownTimer(selectedTimerMinutes);
+            } else {
+                stopCountdownTimer();
             }
         }).catch(err => {
             console.error("Failed to toggle pump", err);
