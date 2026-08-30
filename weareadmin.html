@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Portal - SmartFarm Kale</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Login Modal -->
+    <div id="login-modal" class="login-overlay" style="display: none;">
+        <div class="login-card">
+            <div class="login-icon-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+            <h2>เข้าสู่ระบบ Admin</h2>
+            <p class="subtitle">เพื่อสิทธิ์ในการจัดการข้อมูลฟาร์ม</p>
+            <div class="input-group">
+                <input type="email" id="login-email" placeholder="อีเมล (Email)" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="login-password" placeholder="รหัสผ่าน (Password)" required>
+            </div>
+            <p id="login-error" class="error-text"></p>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-login-submit" class="btn-primary" style="flex: 1;">Login</button>
+                <button id="btn-login-cancel" class="btn-secondary" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div class="app-container">
+        <!-- Top Header Bar -->
+        <header class="top-bar">
+            <div class="logo-section">
+                <img src="kaleimg.webp" alt="Kale Logo" class="logo-img" onerror="this.onerror=null; this.src='Farm.webp';">
+                <div class="logo-text">
+                    <h1>Kale Admin Portal</h1>
+                    <p>ระบบจัดการคำแนะนำฟาร์ม</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <!-- Dark/Light Theme Toggle Button -->
+                <button id="theme-toggle-btn" class="btn-icon" title="สลับธีม (Light/Dark)">
+                    <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <button id="btn-show-login" class="btn-icon" title="Login">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />
+                    </svg>
+                </button>
+                <button id="btn-logout" class="btn-icon" style="display: none; color: var(--red);" title="Logout">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Admin Content -->
+        <main class="tab-view active" style="padding-top: 0.5rem;">
+            <div class="view-header">
+                <h2>👑 ระบบจัดการคำแนะนำ (Admin Only)</h2>
+                <p>ข้อความในหน้านี้จะแสดงผลที่หน้าหลักของระบบโดยอัตโนมัติแบบ Realtime</p>
+            </div>
+
+            <div class="controls-wrapper">
+                <!-- Admin Lock Overlay -->
+                <div id="admin-lock-overlay" class="control-lock-overlay">
+                    <div class="lock-message">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <span>กรุณา เข้าสู่ระบบ เพื่อแก้ไขคำแนะนำ</span>
+                    </div>
+                </div>
+
+                <section class="control-box">
+                    <div class="box-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 1-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        <span>แก้ไขคำแนะนำการดูแลผักเคล</span>
+                    </div>
+
+                    <div class="admin-form">
+                        <div class="input-group-admin">
+                            <label>💧 คำแนะนำการให้น้ำและความชื้นดิน</label>
+                            <textarea id="admin-input-moisture" rows="3" placeholder="ระบุคำแนะนำเรื่องการให้น้ำ..." disabled></textarea>
+                        </div>
+                        <div class="input-group-admin">
+                            <label>🌡️ คำแนะนำอุณหภูมิและสภาพอากาศ</label>
+                            <textarea id="admin-input-temp" rows="3" placeholder="ระบุคำแนะนำเรื่องอุณหภูมิ..." disabled></textarea>
+                        </div>
+                        <div class="input-group-admin">
+                            <label>🌱 คำแนะนำการดูแลรักษาเพิ่มเติม</label>
+                            <textarea id="admin-input-general" rows="3" placeholder="ระบุเคล็ดลับการดูแลเพิ่มเติม..." disabled></textarea>
+                        </div>
+
+                        <button id="save-admin-rec-btn" class="btn-primary full-width" style="margin-top: 15px;" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            <span>บันทึกคำแนะนำ</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="admin.js"></script>
+</body>
+
+</html>

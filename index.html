@@ -4,9 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kale Smart Farm</title>
+    <title>SmartFarm-KMITL-Kale</title>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js for Trend Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -15,13 +19,14 @@
     <div id="login-modal" class="login-overlay" style="display: none;">
         <div class="login-card">
             <div class="login-icon-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
             </div>
             <h2>เข้าสู่ระบบ</h2>
-            <p class="subtitle">เพื่อใช้งานโหมดควบคุมระบบรดน้ำ</p>
+            <p class="subtitle">เพื่อใช้งานโหมดควบคุมและตั้งค่าระบบ</p>
             <div class="input-group">
                 <input type="email" id="login-email" placeholder="อีเมล (Email)" required>
             </div>
@@ -41,42 +46,45 @@
         <!-- Top Header Bar -->
         <header class="top-bar">
             <div class="logo-section">
-                <div class="logo-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
-                        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
-                    </svg>
-                </div>
+                <img src="kaleimg.webp" alt="Kale Logo" class="logo-img"
+                    onerror="this.onerror=null; this.src='Farm.webp';">
                 <div class="logo-text">
-                    <h1>Kale Smart Farm</h1>
-                    <p>Smart Irrigation System</p>
+                    <h1>Kale Smart Irrigation</h1>
+                    <div class="cloud-status-top" id="cloud-status">
+                        <span id="connection-status" class="status-dot connecting"></span>
+                        <span id="connection-text">Connecting...</span>
+                    </div>
                 </div>
             </div>
             <div class="header-actions">
                 <!-- Dark/Light Theme Toggle Button -->
                 <button id="theme-toggle-btn" class="btn-icon" title="สลับธีม (Light/Dark)">
-                    <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"/>
-                        <line x1="12" y1="1" x2="12" y2="3"/>
-                        <line x1="12" y1="21" x2="12" y2="23"/>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                        <line x1="1" y1="12" x2="3" y2="12"/>
-                        <line x1="21" y1="12" x2="23" y2="12"/>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                     </svg>
-                    <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                     </svg>
                 </button>
                 <button id="btn-show-login" class="btn-icon" title="Login">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
                         <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />
                     </svg>
                 </button>
                 <button id="btn-logout" class="btn-icon" style="display: none; color: var(--red);" title="Logout">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
                     </svg>
                 </button>
@@ -90,16 +98,17 @@
             <div class="hero-content">
                 <div class="weather-info">
                     <div class="weather-icon-badge">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="5"/>
-                            <line x1="12" y1="1" x2="12" y2="3"/>
-                            <line x1="12" y1="21" x2="12" y2="23"/>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                            <line x1="1" y1="12" x2="3" y2="12"/>
-                            <line x1="21" y1="12" x2="23" y2="12"/>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5" />
+                            <line x1="12" y1="1" x2="12" y2="3" />
+                            <line x1="12" y1="21" x2="12" y2="23" />
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                            <line x1="1" y1="12" x2="3" y2="12" />
+                            <line x1="21" y1="12" x2="23" y2="12" />
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                         </svg>
                     </div>
                     <div class="weather-text">
@@ -107,180 +116,398 @@
                         <span class="desc">อุณหภูมิฟาร์มผักเคล</span>
                     </div>
                 </div>
-                <div class="cloud-status" id="cloud-status">
-                    <span id="connection-status" class="status-dot connecting"></span>
-                    <span id="connection-text">Connecting...</span>
-                </div>
             </div>
         </section>
 
-        <!-- Sensor Grid -->
-        <section class="sensor-grid">
-            <!-- Soil Moisture -->
-            <div class="sensor-card">
-                <div class="sensor-header">
-                    <div class="icon-circle blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-                        </svg>
-                    </div>
-                    <span>SOIL MOISTURE</span>
-                </div>
-                <div class="sensor-value blue-text"><span id="moisture-val">--</span><span class="unit">%</span></div>
-                <div class="sensor-status" id="moisture-status">
-                    <span class="dot gray" id="moisture-status-dot"></span> 
-                    <span id="moisture-status-text">รอข้อมูล...</span>
-                </div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar blue-bg" id="moisture-bar" style="width: 0%"></div>
-                </div>
-            </div>
-
-            <!-- Temperature -->
-            <div class="sensor-card">
-                <div class="sensor-header">
-                    <div class="icon-circle orange">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
-                        </svg>
-                    </div>
-                    <span>TEMPERATURE</span>
-                </div>
-                <div class="sensor-value orange-text"><span id="temp-val">--</span><span class="unit">°C</span></div>
-                <div class="sensor-status" id="temp-status">
-                    <span class="dot red" style="display:none;" id="temp-err-dot"></span> 
-                    <span id="temp-status-text" class="red-text" style="display:none;">ไม่พบเซนเซอร์</span>
-                </div>
-            </div>
-
-            <!-- Humidity -->
-            <div class="sensor-card">
-                <div class="sensor-header">
-                    <div class="icon-circle light-blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
-                        </svg>
-                    </div>
-                    <span>HUMIDITY</span>
-                </div>
-                <div class="sensor-value light-blue-text"><span id="humid-val">--</span><span class="unit">%</span></div>
-                <div class="sensor-status" id="humid-status">
-                    <span class="dot red" style="display:none;" id="humid-err-dot"></span> 
-                    <span id="humid-status-text" class="red-text" style="display:none;">ไม่พบเซนเซอร์</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Controls Section -->
-        <div class="controls-wrapper">
-            <!-- Lock Overlay -->
-            <div id="control-lock-overlay" class="control-lock-overlay">
-                <div class="lock-message">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        <!-- ==========================================
+             PAGE 1: DASHBOARD VIEW (Read-Only)
+             ========================================== -->
+        <main id="view-dashboard" class="tab-view active">
+            <!-- 🚨 Critical Alert Banner -->
+            <div id="critical-alert-banner" class="alert-banner" style="display: none;">
+                <div class="alert-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
                     </svg>
-                    <span>กรุณา Login เพื่อใช้งานแผงควบคุม</span>
                 </div>
+                <span id="alert-banner-text">แจ้งเตือนสภาวะวิกฤต</span>
             </div>
 
-            <section class="control-grid">
-                <!-- Mode Selection -->
-                <div class="control-box">
-                    <div class="box-header">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                        </svg>
-                        <span>โหมดการทำงาน</span>
-                    </div>
-                    <div class="mode-buttons">
-                        <button id="btn-mode-manual" class="mode-btn" disabled>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
-                                <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6"/>
-                                <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/>
-                                <path d="M18 8a2 2 0 0 1 2 2v4a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6v-1.5"/>
+            <!-- Sensor Cards Grid -->
+            <section class="sensor-grid">
+                <!-- Soil Moisture -->
+                <div class="sensor-card">
+                    <div class="sensor-header">
+                        <div class="icon-circle blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
                             </svg>
-                            <span>Manual</span>
-                        </button>
-                        <button id="btn-mode-auto" class="mode-btn active" disabled>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
-                            </svg>
-                            <span>Auto</span>
-                        </button>
+                        </div>
+                        <span>SOIL MOISTURE</span>
                     </div>
-                    <p class="box-hint">ระบบจะรดน้ำอัตโนมัติตามช่วงความชื้นที่กำหนดไว้</p>
+                    <div class="sensor-value blue-text"><span id="moisture-val">--</span><span class="unit">%</span>
+                    </div>
+                    <div class="sensor-status" id="moisture-status">
+                        <span class="dot gray" id="moisture-status-dot"></span>
+                        <span id="moisture-status-text">รอข้อมูล...</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar blue-bg" id="moisture-bar" style="width: 0%"></div>
+                    </div>
                 </div>
 
-                <!-- Water Pump -->
-                <div class="control-box">
-                    <div class="box-header">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-                        </svg>
-                        <span>สั่งงานปั๊มน้ำ</span>
+                <!-- Temperature -->
+                <div class="sensor-card">
+                    <div class="sensor-header">
+                        <div class="icon-circle orange">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+                            </svg>
+                        </div>
+                        <span>TEMPERATURE</span>
                     </div>
-                    <div class="pump-status">
-                        <span id="pump-status-dot" class="dot gray"></span>
-                        <span id="pump-status-text">ปิดอยู่</span>
+                    <div class="sensor-value orange-text"><span id="temp-val">--</span><span class="unit">°C</span>
                     </div>
-                    <button id="water-btn" class="btn-primary outline" disabled>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="5 3 19 12 5 21 5 3"/>
+                    <div class="sensor-status" id="temp-status">
+                        <span class="dot red" style="display:none;" id="temp-err-dot"></span>
+                        <span id="temp-status-text" class="red-text" style="display:none;">ไม่พบเซนเซอร์</span>
+                    </div>
+                </div>
+
+                <!-- Air Humidity -->
+                <div class="sensor-card">
+                    <div class="sensor-header">
+                        <div class="icon-circle light-blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+                            </svg>
+                        </div>
+                        <span>HUMIDITY</span>
+                    </div>
+                    <div class="sensor-value light-blue-text"><span id="humid-val">--</span><span class="unit">%</span>
+                    </div>
+                    <div class="sensor-status" id="humid-status">
+                        <span class="dot red" style="display:none;" id="humid-err-dot"></span>
+                        <span id="humid-status-text" class="red-text" style="display:none;">ไม่พบเซนเซอร์</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Status Readout Overview Section -->
+            <section class="dashboard-status-section">
+                <div class="status-card-grid">
+                    <!-- Readout 1: Pump Status -->
+                    <div class="readout-card">
+                        <div class="readout-icon blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                            </svg>
+                        </div>
+                        <div class="readout-info">
+                            <span class="readout-title">สถานะปั๊มน้ำ</span>
+                            <span id="dash-pump-badge" class="status-badge gray">
+                                <span id="dash-pump-dot" class="dot gray"></span>
+                                <span id="dash-pump-text">ปิดอยู่</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Readout 2: Mode Status -->
+                    <div class="readout-card">
+                        <div class="readout-icon green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3" />
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                            </svg>
+                        </div>
+                        <div class="readout-info">
+                            <span class="readout-title">โหมดการทำงาน</span>
+                            <span id="dash-mode-badge" class="status-badge primary">
+                                <span id="dash-mode-text">Auto</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 📊 Soil Moisture Trend Chart Section -->
+            <section class="chart-section">
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                    <span>กราฟความชื้นดิน</span>
+                </div>
+                <div class="chart-card">
+                    <canvas id="moisture-trend-chart" height="150"></canvas>
+                </div>
+            </section>
+
+            <!-- Dynamic Kale Care Recommendations Section -->
+            <section class="recommendations-section">
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    <span>คำแนะนำการดูแลผักเคล</span>
+                </div>
+
+                <div class="recommendation-cards">
+                    <!-- Moisture Tip Card -->
+                    <div class="recommend-item-card">
+                        <div class="rec-icon blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                            </svg>
+                        </div>
+                        <div class="rec-content">
+                            <h4>ความชื้นและการให้น้ำที่เหมาะสม</h4>
+                            <p id="rec-text-moisture">ควรรักษาระดับความชื้นดินให้อยู่ในช่วง 30% - 60%
+                                แนะนำให้รดน้ำในช่วงเช้าตรู่หรือช่วงเย็น หลีกเลี่ยงการรดน้ำช่วงแดดจัดเพื่อป้องกันรากเน่า
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Temperature Tip Card -->
+                    <div class="recommend-item-card">
+                        <div class="rec-icon orange">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+                            </svg>
+                        </div>
+                        <div class="rec-content">
+                            <h4>อุณหภูมิและสภาพอากาศที่เหมาะสม</h4>
+                            <p id="rec-text-temp">ผักเคลเจริญเติบโตได้ดีในอุณหภูมิ 20°C - 32°C และความชื้นอากาศ 50% -
+                                70% หากสภาพอากาศร้อนชื้นเกินไป ควรระบายอากาศหรือพ่นหมอกเพื่อลดอุณหภูมิ</p>
+                        </div>
+                    </div>
+
+                    <!-- General Tip Card -->
+                    <div class="recommend-item-card">
+                        <div class="rec-icon green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                            </svg>
+                        </div>
+                        <div class="rec-content">
+                            <h4>การดูแลรักษาเพิ่มเติม</h4>
+                            <p id="rec-text-general">ควรตรวจเช็คระบบระบายน้ำในกระถางเพื่อไม่ให้น้ำขังขัง
+                                และใส่ปุ๋ยบำรุงใบเป็นประจำทุก 2 สัปดาห์</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ==========================================
+             PAGE 2: CONTROL VIEW 🎮
+             ========================================== -->
+        <main id="view-control" class="tab-view">
+            <div class="view-header">
+                <h2>🎮 ควบคุมการทำงาน</h2>
+                <p>เลือกโหมดสั่งงานและสั่งเปิด-ปิดปั๊มน้ำ</p>
+            </div>
+
+            <div class="controls-wrapper">
+                <!-- Lock Overlay -->
+                <div id="control-lock-overlay" class="control-lock-overlay">
+                    <div class="lock-message">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
-                        <span>เปิดปั๊มน้ำ</span>
+                        <span>กรุณา Login เพื่อเข้าถึงแผงควบคุม</span>
+                    </div>
+                </div>
+
+                <section class="control-grid">
+                    <!-- Mode Selection -->
+                    <div class="control-box">
+                        <div class="box-header">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3" />
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                            </svg>
+                            <span>โหมดการทำงาน</span>
+                        </div>
+                        <div class="mode-buttons">
+                            <button id="btn-mode-manual" class="mode-btn" disabled>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                                    <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6" />
+                                    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                                    <path d="M18 8a2 2 0 0 1 2 2v4a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6v-1.5" />
+                                </svg>
+                                <span>Manual</span>
+                            </button>
+                            <button id="btn-mode-auto" class="mode-btn active" disabled>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path
+                                        d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                                </svg>
+                                <span>Auto</span>
+                            </button>
+                        </div>
+                        <p class="box-hint">ระบบจะรดน้ำอัตโนมัติตามช่วงความชื้นที่กำหนดไว้</p>
+                    </div>
+
+                    <!-- Water Pump with Timer Options -->
+                    <div class="control-box">
+                        <div class="box-header">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                            </svg>
+                            <span>สั่งงานปั๊มน้ำ</span>
+                        </div>
+                        <div class="pump-status">
+                            <span id="pump-status-dot" class="dot gray"></span>
+                            <span id="pump-status-text">ปิดอยู่</span>
+                        </div>
+
+                        <!-- ⏱️ Watering Timer Preset Selector -->
+                        <div class="timer-section" id="timer-selection-wrapper">
+                            <label class="timer-label">ตั้งเวลารดน้ำถอยหลัง:</label>
+                            <div class="timer-options">
+                                <button class="timer-btn active" data-minutes="0">เปิดตลอด</button>
+                                <button class="timer-btn" data-minutes="1">1 นาที</button>
+                                <button class="timer-btn" data-minutes="3">3 นาที</button>
+                                <button class="timer-btn" data-minutes="5">5 นาที</button>
+                            </div>
+                        </div>
+
+                        <!-- ⏱️ Live Countdown Badge -->
+                        <div id="pump-countdown-badge" class="countdown-badge" style="display: none;">
+                            ⏱️ เหลือเวลารดน้ำ: <strong id="countdown-timer-text">00:00</strong>
+                        </div>
+
+                        <button id="water-btn" class="btn-primary outline" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                            <span>เปิดปั๊มน้ำ</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- ==========================================
+             PAGE 3: SETTINGS VIEW ⚙️
+             ========================================== -->
+        <main id="view-settings" class="tab-view">
+            <div class="view-header">
+                <h2>⚙️ ตั้งค่าระบบ</h2>
+                <p>กำหนดเกณฑ์ความชื้นสำหรับการรดน้ำอัตโนมัติ</p>
+            </div>
+
+            <div class="controls-wrapper">
+                <section class="threshold-box control-box">
+                    <div class="box-header space-between">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="6" />
+                                <circle cx="12" cy="12" r="2" />
+                            </svg>
+                            <span>เกณฑ์ความชื้นอัตโนมัติ</span>
+                        </div>
+                    </div>
+
+                    <div class="threshold-inputs">
+                        <div class="input-group-inline">
+                            <label>ปั๊มเปิดเมื่อต่ำกว่า (Min %)</label>
+                            <input type="number" id="threshold-min" min="0" max="100" value="30" disabled>
+                        </div>
+                        <div class="input-group-inline">
+                            <label>ปั๊มปิดเมื่อสูงกว่า (Max %)</label>
+                            <input type="number" id="threshold-max" min="0" max="100" value="60" disabled>
+                        </div>
+                    </div>
+
+                    <button id="save-threshold-btn" class="btn-primary full-width" style="margin-top: 10px;" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                            <polyline points="17 21 17 13 7 13 7 21" />
+                            <polyline points="7 3 7 8 15 8" />
+                        </svg>
+                        <span>บันทึกเกณฑ์ความชื้น</span>
                     </button>
-                </div>
-            </section>
 
-            <!-- Threshold Settings -->
-            <section class="threshold-box control-box">
-                <div class="box-header space-between">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <circle cx="12" cy="12" r="6"/>
-                            <circle cx="12" cy="12" r="2"/>
-                        </svg>
-                        <span>เกณฑ์ความชื้นอัตโนมัติ</span>
+                    <div class="recommend-box">
+                        <div class="rec-icon-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                            </svg>
+                        </div>
+                        <div class="rec-text">
+                            <strong>ช่วงแนะนำ 30% - 60%</strong>
+                            <p>ช่วงความชื้นที่เหมาะสมที่สุดสำหรับการเจริญเติบโตของผักเคล</p>
+                        </div>
                     </div>
-                </div>
+                </section>
+            </div>
+        </main>
 
-                <div class="threshold-inputs">
-                    <div class="input-group-inline">
-                        <label>ปั๊มเปิดเมื่อต่ำกว่า (Min %)</label>
-                        <input type="number" id="threshold-min" min="0" max="100" value="30" disabled>
-                    </div>
-                    <div class="input-group-inline">
-                        <label>ปั๊มปิดเมื่อสูงกว่า (Max %)</label>
-                        <input type="number" id="threshold-max" min="0" max="100" value="60" disabled>
-                    </div>
-                </div>
-                
-                <button id="save-threshold-btn" class="btn-primary full-width" style="margin-top: 10px;" disabled>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                        <polyline points="17 21 17 13 7 13 7 21"/>
-                        <polyline points="7 3 7 8 15 8"/>
-                    </svg>
-                    <span>บันทึกเกณฑ์ความชื้น</span>
-                </button>
-
-                <div class="recommend-box">
-                    <div class="rec-icon-badge">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
-                        </svg>
-                    </div>
-                    <div class="rec-text">
-                        <strong>ช่วงแนะนำ 30% - 60%</strong>
-                        <p>ช่วงความชื้นที่เหมาะสมที่สุดสำหรับการเจริญเติบโตของผักเคล</p>
-                    </div>
-                </div>
-            </section>
-        </div>
+        <!-- ==========================================
+             BOTTOM NAVIGATION BAR 📱 (3 User Tabs)
+             ========================================== -->
+        <nav class="bottom-nav">
+            <button id="nav-tab-dashboard" class="nav-item active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                </svg>
+                <span>หน้าหลัก</span>
+            </button>
+            <button id="nav-tab-control" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                <span>ควบคุม</span>
+            </button>
+            <button id="nav-tab-settings" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                <span>ตั้งค่า</span>
+            </button>
+        </nav>
     </div>
 
     <script type="module" src="script.js"></script>
