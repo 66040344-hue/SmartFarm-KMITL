@@ -116,6 +116,18 @@
                         <span class="desc">อุณหภูมิฟาร์มผักเคล</span>
                     </div>
                 </div>
+
+                <div class="last-sync-hero-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <div class="sync-hero-text">
+                        <span class="label">อัปเดตล่าสุด</span>
+                        <span class="time" id="last-update-time">-</span>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -212,7 +224,7 @@
                             </svg>
                         </div>
                         <div class="readout-info">
-                            <span class="readout-title">สถานะปั๊มน้ำ</span>
+                            <span class="readout-title">วาล์วน้ำ</span>
                             <span id="dash-pump-badge" class="status-badge gray">
                                 <span id="dash-pump-dot" class="dot gray"></span>
                                 <span id="dash-pump-text">ปิดอยู่</span>
@@ -327,18 +339,6 @@
             </div>
 
             <div class="controls-wrapper">
-                <!-- Lock Overlay -->
-                <div id="control-lock-overlay" class="control-lock-overlay">
-                    <div class="lock-message">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        <span>กรุณา Login เพื่อเข้าถึงแผงควบคุม</span>
-                    </div>
-                </div>
-
                 <section class="control-grid">
                     <!-- Mode Selection -->
                     <div class="control-box">
@@ -352,7 +352,7 @@
                             <span>โหมดการทำงาน</span>
                         </div>
                         <div class="mode-buttons">
-                            <button id="btn-mode-manual" class="mode-btn" disabled>
+                            <button id="btn-mode-manual" class="mode-btn">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
@@ -362,7 +362,7 @@
                                 </svg>
                                 <span>Manual</span>
                             </button>
-                            <button id="btn-mode-auto" class="mode-btn active" disabled>
+                            <button id="btn-mode-auto" class="mode-btn active">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round">
                                     <path
@@ -381,7 +381,7 @@
                                 stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
                             </svg>
-                            <span>สั่งงานปั๊มน้ำ</span>
+                            <span>เปิด-ปิดวาล์ว</span>
                         </div>
                         <div class="pump-status">
                             <span id="pump-status-dot" class="dot gray"></span>
@@ -404,12 +404,12 @@
                             ⏱️ เหลือเวลารดน้ำ: <strong id="countdown-timer-text">00:00</strong>
                         </div>
 
-                        <button id="water-btn" class="btn-primary outline" disabled>
+                        <button id="water-btn" class="btn-primary outline">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="5 3 19 12 5 21 5 3" />
                             </svg>
-                            <span>เปิดปั๊มน้ำ</span>
+                            <span>เปิดวาล์วน้ำ</span>
                         </button>
                     </div>
                 </section>
@@ -441,16 +441,16 @@
 
                     <div class="threshold-inputs">
                         <div class="input-group-inline">
-                            <label>ปั๊มเปิดเมื่อต่ำกว่า (Min %)</label>
-                            <input type="number" id="threshold-min" min="0" max="100" value="30" disabled>
+                            <label>วาล์วน้ำเปิดเมื่อต่ำกว่า (Min %)</label>
+                            <input type="number" id="threshold-min" min="0" max="100" value="30">
                         </div>
                         <div class="input-group-inline">
-                            <label>ปั๊มปิดเมื่อสูงกว่า (Max %)</label>
-                            <input type="number" id="threshold-max" min="0" max="100" value="60" disabled>
+                            <label>วาล์วน้ำปิดเมื่อสูงกว่า (Max %)</label>
+                            <input type="number" id="threshold-max" min="0" max="100" value="60">
                         </div>
                     </div>
 
-                    <button id="save-threshold-btn" class="btn-primary full-width" style="margin-top: 10px;" disabled>
+                    <button id="save-threshold-btn" class="btn-primary full-width" style="margin-top: 10px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
                             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />

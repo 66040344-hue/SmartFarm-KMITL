@@ -5,14 +5,14 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD_CUkSiqoX2szxgZuLTqdsfR20LETYOF4",
-  authDomain: "smartfarm-kmitl.firebaseapp.com",
-  databaseURL: "https://smartfarm-kmitl-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "smartfarm-kmitl",
-  storageBucket: "smartfarm-kmitl.firebasestorage.app",
-  messagingSenderId: "819207526985",
-  appId: "1:819207526985:web:0aca2227ba7ab28241fd98",
-  measurementId: "G-R2EMB9PXNS"
+    apiKey: "AIzaSyD_CUkSiqoX2szxgZuLTqdsfR20LETYOF4",
+    authDomain: "smartfarm-kmitl.firebaseapp.com",
+    databaseURL: "https://smartfarm-kmitl-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "smartfarm-kmitl",
+    storageBucket: "smartfarm-kmitl.firebasestorage.app",
+    messagingSenderId: "819207526985",
+    appId: "1:819207526985:web:0aca2227ba7ab28241fd98",
+    measurementId: "G-R2EMB9PXNS"
 };
 
 // Initialize Firebase
@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const dashPumpText = document.getElementById("dash-pump-text");
     const dashModeBadge = document.getElementById("dash-mode-badge");
     const dashModeText = document.getElementById("dash-mode-text");
-    
+
     // Alert Banner Element
     const criticalAlertBanner = document.getElementById("critical-alert-banner");
     const alertBannerText = document.getElementById("alert-banner-text");
@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const waterBtn = document.getElementById("water-btn");
     const pumpStatusDot = document.getElementById("pump-status-dot");
     const pumpStatusText = document.getElementById("pump-status-text");
-    
+
     // Timer Presets & Countdown Elements
     const timerBtns = document.querySelectorAll(".timer-btn");
     const pumpCountdownBadge = document.getElementById("pump-countdown-badge");
@@ -128,7 +128,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const statusDot = document.getElementById("connection-status");
     const statusText = document.getElementById("connection-text");
-    
+    const lastUpdateTimeText = document.getElementById("last-update-time");
+
     const heroTemp = document.getElementById("hero-temp");
 
     // Login/Auth UI
@@ -140,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnLoginSubmit = document.getElementById("btn-login-submit");
     const btnLoginCancel = document.getElementById("btn-login-cancel");
     const errorText = document.getElementById("login-error");
-    
+
     const controlLockOverlay = document.getElementById("control-lock-overlay");
 
     // State
@@ -208,8 +209,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 scales: {
                     x: {
                         grid: { color: gridColor },
-                        ticks: { 
-                            color: textColor, 
+                        ticks: {
+                            color: textColor,
                             font: { family: 'Prompt', size: 10 },
                             maxTicksLimit: 8
                         }
@@ -257,35 +258,10 @@ document.addEventListener("DOMContentLoaded", () => {
             loginModal.style.display = 'none';
             btnShowLogin.style.display = 'none';
             btnLogout.style.display = 'flex';
-            
-            if (controlLockOverlay) {
-                controlLockOverlay.style.opacity = '0';
-                setTimeout(() => controlLockOverlay.style.display = 'none', 300);
-            }
-
-            btnModeManual.disabled = false;
-            btnModeAuto.disabled = false;
-            thresholdMinInput.disabled = false;
-            thresholdMaxInput.disabled = false;
-            saveThresholdBtn.disabled = false;
-            
-            updateUIVisibility();
         } else {
             isAuthenticated = false;
             btnShowLogin.style.display = 'flex';
             btnLogout.style.display = 'none';
-            
-            if (controlLockOverlay) {
-                controlLockOverlay.style.display = 'flex';
-                setTimeout(() => controlLockOverlay.style.opacity = '1', 10);
-            }
-
-            btnModeManual.disabled = true;
-            btnModeAuto.disabled = true;
-            waterBtn.disabled = true;
-            thresholdMinInput.disabled = true;
-            thresholdMaxInput.disabled = true;
-            saveThresholdBtn.disabled = true;
         }
     });
 
@@ -294,7 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
         errorText.innerText = "";
     });
     btnLoginCancel.addEventListener("click", () => loginModal.style.display = 'none');
-    
+
     btnLoginSubmit.addEventListener("click", () => {
         const email = emailInput.value;
         const password = passwordInput.value;
@@ -322,6 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
         onValue(heartbeatRef, (snapshot) => {
             if (snapshot.exists()) {
                 lastHeartbeatTime = Date.now();
+                updateLastUpdateTimeUI();
                 if (isDeviceOffline) {
                     isDeviceOffline = false;
                     updateConnectionStatus(true);
@@ -343,14 +320,14 @@ document.addEventListener("DOMContentLoaded", () => {
         // 1. Listen to Sensor Data (Live Realtime Reads)
         const sensorsRef = ref(db, 'sensors');
         onValue(sensorsRef, (snapshot) => {
-            if (isDeviceOffline) return; 
+            if (isDeviceOffline) return;
 
             const data = snapshot.val();
             if (data) {
                 updateConnectionStatus(true);
-                
+
                 // Moisture Logic
-                if(data.soil_moisture !== undefined) {
+                if (data.soil_moisture !== undefined) {
                     moistureVal.innerText = data.soil_moisture;
                     moistureBar.style.width = `${data.soil_moisture}%`;
 
@@ -383,12 +360,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     tempErrDot.style.display = 'none';
                     humidStatusText.style.display = 'none';
                     humidErrDot.style.display = 'none';
-                    
-                    if(data.temperature !== undefined) {
+
+                    if (data.temperature !== undefined) {
                         tempVal.innerText = data.temperature.toFixed(1);
                         heroTemp.innerText = `${data.temperature.toFixed(1)}°C`;
                     }
-                    if(data.humidity !== undefined) humidVal.innerText = data.humidity.toFixed(1);
+                    if (data.humidity !== undefined) humidVal.innerText = data.humidity.toFixed(1);
                 }
 
                 // Check Critical Alerts Banner
@@ -408,14 +385,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     const item = historyData[key];
                     if (item && item.soil_moisture !== undefined) {
                         let timeStr = "";
-                        if (item.timestamp) {
+                        if (item.timestamp && item.timestamp > 1600000000000) { // Check if it's a valid epoch time
                             const date = new Date(item.timestamp);
                             timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-                        } else {
-                            timeStr = "--:--";
+                            chartLabels.push(timeStr);
+                            chartDataPoints.push(item.soil_moisture);
                         }
-                        chartLabels.push(timeStr);
-                        chartDataPoints.push(item.soil_moisture);
                     }
                 });
 
@@ -430,7 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data) {
                 if (data.auto_mode !== undefined) {
                     isAutoMode = data.auto_mode;
-                    if(isAuthenticated) updateUIVisibility();
+                    updateUIVisibility();
                     updateModeButtonsUI();
                     updateDashboardModeUI();
                 }
@@ -450,7 +425,7 @@ document.addEventListener("DOMContentLoaded", () => {
         onValue(controlRef, (snapshot) => {
             const state = snapshot.val();
             isWatering = state || false;
-            
+
             if (isWatering) {
                 pumpStatusText.innerText = "กำลังรดน้ำ";
                 pumpStatusDot.className = "dot green";
@@ -458,7 +433,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="6" y="6" width="12" height="12" rx="1"/>
                     </svg>
-                    <span>ปิดปั๊มน้ำ</span>
+                    <span>ปิดวาล์วน้ำ</span>
                 `;
                 waterBtn.classList.add("active-pump");
 
@@ -475,10 +450,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="5 3 19 12 5 21 5 3"/>
                     </svg>
-                    <span>เปิดปั๊มน้ำ</span>
+                    <span>เปิดวาล์วน้ำ</span>
                 `;
                 waterBtn.classList.remove("active-pump");
-                
+
                 // Clear Timer Countdown if pump is manually turned off
                 stopCountdownTimer();
 
@@ -559,23 +534,20 @@ document.addEventListener("DOMContentLoaded", () => {
         countdownTimerText.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    // --- UI Write Actions (Requires Auth) ---
+    // --- UI Write Actions ---
 
     btnModeManual.addEventListener("click", () => {
-        if(!isAuthenticated) return;
         set(ref(db, 'state/config/auto_mode'), false);
     });
 
     btnModeAuto.addEventListener("click", () => {
-        if(!isAuthenticated) return;
         set(ref(db, 'state/config/auto_mode'), true);
     });
 
     saveThresholdBtn.addEventListener("click", () => {
-        if(!isAuthenticated) return;
         const minVal = parseInt(thresholdMinInput.value);
         const maxVal = parseInt(thresholdMaxInput.value);
-        
+
         if (minVal >= maxVal) {
             alert("ค่า Min (ความชื้นต่ำสุด) ต้องน้อยกว่าค่า Max (ความชื้นสูงสุด) ครับ");
             return;
@@ -588,12 +560,12 @@ document.addEventListener("DOMContentLoaded", () => {
             </svg>
             <span>กำลังบันทึก...</span>
         `;
-        
-        const updates = {};
-        updates['state/config/threshold_min'] = minVal;
-        updates['state/config/threshold_max'] = maxVal;
 
-        update(ref(db), updates).then(() => {
+        const updates = {};
+        updates['threshold_min'] = minVal;
+        updates['threshold_max'] = maxVal;
+
+        update(ref(db, 'state/config'), updates).then(() => {
             setTimeout(() => {
                 saveThresholdBtn.innerHTML = `
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -629,17 +601,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     waterBtn.addEventListener("click", () => {
-        if(!isAuthenticated || isAutoMode) return; 
-        
+        if (isAutoMode) {
+            alert("ระบบอยู่ในโหมด Auto กรุณาสลับเป็นโหมด Manual ก่อนเปิดปั๊มน้ำครับ");
+            return;
+        }
+
         const newState = !isWatering;
         waterBtn.innerHTML = "<span>Processing...</span>";
-        
+
         const timerSec = newState ? (selectedTimerMinutes * 60) : 0;
         const updates = {};
-        updates['state/control/pump_state'] = newState;
-        updates['state/control/pump_timer_sec'] = timerSec;
+        updates['pump_state'] = newState;
+        updates['pump_timer_sec'] = timerSec;
 
-        update(ref(db), updates).then(() => {
+        update(ref(db, 'state/control'), updates).then(() => {
             if (newState && selectedTimerMinutes > 0) {
                 startCountdownTimer(selectedTimerMinutes);
             } else {
@@ -652,6 +627,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // --- Helpers ---
+
+    function updateLastUpdateTimeUI() {
+        if (!lastUpdateTimeText) return;
+        const now = new Date();
+        const dateStr = String(now.getDate()).padStart(2, '0') + '/' +
+            String(now.getMonth() + 1).padStart(2, '0') + '/' +
+            now.getFullYear();
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0') + ':' +
+            String(now.getSeconds()).padStart(2, '0');
+        lastUpdateTimeText.innerText = `${dateStr} ${timeStr}`;
+    }
 
     function updateModeButtonsUI() {
         if (isAutoMode) {
@@ -667,10 +654,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (dashModeBadge && dashModeText) {
             if (isAutoMode) {
                 dashModeBadge.className = "status-badge primary";
-                dashModeText.innerText = "อัตโนมัติ (Auto)";
+                dashModeText.innerText = "Auto";
             } else {
                 dashModeBadge.className = "status-badge gray";
-                dashModeText.innerText = "กำหนดเอง (Manual)";
+                dashModeText.innerText = "Manual";
             }
         }
     }
@@ -706,16 +693,16 @@ document.addEventListener("DOMContentLoaded", () => {
         tempVal.innerText = "--";
         humidVal.innerText = "--";
         moistureBar.style.width = `0%`;
-        
+
         moistureStatusText.innerText = "ไม่พบอุปกรณ์";
         moistureStatusText.className = "red-text";
         moistureStatusDot.className = "dot red";
-        
+
         tempStatusText.innerText = "ไม่พบอุปกรณ์";
         tempStatusText.className = "red-text";
         tempStatusText.style.display = 'inline';
         tempErrDot.style.display = 'inline-block';
-        
+
         humidStatusText.innerText = "ไม่พบอุปกรณ์";
         humidStatusText.className = "red-text";
         humidStatusText.style.display = 'inline';

@@ -241,11 +241,51 @@ body {
 .hero-content {
     position: relative;
     z-index: 3;
-    padding: 1.25rem;
+    padding: 1rem 1.25rem;
     height: 100%;
     display: flex;
     align-items: flex-end;
+    justify-content: space-between;
     color: #ffffff;
+}
+
+.last-sync-hero-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 0.35rem 0.65rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.last-sync-hero-badge svg {
+    width: 14px;
+    height: 14px;
+    color: #38bdf8;
+    flex-shrink: 0;
+}
+
+.sync-hero-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.sync-hero-text .label {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.sync-hero-text .time {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
 }
 
 .weather-info {
@@ -362,31 +402,48 @@ body {
     color: var(--red);
 }
 
-/* --- Sensor Grid --- */
+/* --- Sensor Grid (Unified Single Card Frame) --- */
 .sensor-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 0.75rem;
-    padding: 0 1.25rem;
-    margin-top: 0.25rem;
+    gap: 0;
+    padding: 1.1rem 0.2rem;
+    margin: 0.25rem 1.25rem 0 1.25rem;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
 }
 
 .sensor-card {
-    background: var(--bg-card);
+    background: transparent;
     border: none;
-    border-radius: var(--radius-lg);
-    padding: 1rem 0.6rem;
-    box-shadow: var(--shadow-sm);
+    border-radius: 0;
+    padding: 0.5rem 0.3rem;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     transition: var(--transition);
+    position: relative;
 }
 
 .sensor-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    transform: none;
+    box-shadow: none;
+}
+
+.sensor-card:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10%;
+    height: 80%;
+    width: 1px;
+    background: var(--border-color);
+    opacity: 0.8;
 }
 
 .sensor-header {
