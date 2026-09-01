@@ -38,6 +38,27 @@ function showToast(message, type = "success") {
   }, 3500);
 }
 
+// Google Drive & Cloud Image Link Converter
+function convertGoogleDriveUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  
+  const trimmed = url.trim();
+
+  // Match Google Drive /file/d/FILE_ID
+  const matchFileD = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (matchFileD && matchFileD[1]) {
+    return `https://lh3.googleusercontent.com/d/${matchFileD[1]}`;
+  }
+
+  // Match Google Drive ?id=FILE_ID or &id=FILE_ID
+  const matchId = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (matchId && matchId[1]) {
+    return `https://lh3.googleusercontent.com/d/${matchId[1]}`;
+  }
+
+  return trimmed;
+}
+
 // Global Navbar & Mobile Bottom Bar Handler
 function initNavbar() {
   const currentPath = window.location.pathname.split("/").pop() || "main.html";
@@ -148,7 +169,7 @@ function renderMainPageGrid() {
   gridContainer.innerHTML = list.map(item => `
     <div class="durian-card" data-id="${item.id}">
       <div class="card-image-wrap">
-        <img src="${item.image}" alt="${item.nameTh}" onerror="this.src='assets/hero_durian.png'">
+        <img src="${convertGoogleDriveUrl(item.image)}" alt="${item.nameTh}" onerror="this.src='assets/hero_durian.png'">
         <span class="card-badge">${item.origin.split('/')[0]}</span>
       </div>
       <div class="card-body">
@@ -370,9 +391,10 @@ function setupAdminFormControls() {
       const file = e.target.files[0];
       if (!file) return;
 
-      showToast("กำลังประมวลผลรูปภาพ...", "success");
+      // Always read local DataURL first so preview and save work 100% without CORS errors
+      readAsDataURLFallback(file, false);
 
-      // Attempt Firebase Storage Upload if SDK is ready
+      // Attempt optional Firebase Storage upload in background
       if (window.firebase && window.firebase.storage) {
         try {
           const storageRef = window.firebase.storage().ref();
@@ -384,34 +406,42 @@ function setupAdminFormControls() {
             if (imagePreview) imagePreview.src = downloadURL;
             showToast("อัปโหลดรูปขึ้น Firebase Storage สำเร็จ!", "success");
           }).catch((err) => {
-            console.warn("Firebase Storage upload fallback to Local Storage:", err);
-            readAsDataURLFallback(file);
+            console.warn("Firebase Storage CORS/Upload notice (using Local Base64 instead):", err);
+            showToast("บันทึกรูปภาพลง Local Storage เรียบร้อย", "success");
           });
-          return;
         } catch(err) {
-          console.warn("Firebase Storage Exception fallback:", err);
+          console.warn("Firebase Storage Exception:", err);
         }
       }
-
-      readAsDataURLFallback(file);
     });
   }
 
-  function readAsDataURLFallback(file) {
+  function readAsDataURLFallback(file, showSuccessToast = true) {
     const reader = new FileReader();
     reader.onload = function(evt) {
       const dataUrl = evt.target.result;
       if (imageInput) imageInput.value = dataUrl;
       if (imagePreview) imagePreview.src = dataUrl;
-      showToast("แปลงรูปภาพเป็น DataURL สำเร็จ!", "success");
+      if (showSuccessToast) showToast("แปลงรูปภาพเป็น DataURL สำเร็จ!", "success");
     };
     reader.readAsDataURL(file);
   }
 
+  // Google Drive URL Auto-Converter on Paste / Input
   if (imageInput) {
-    imageInput.addEventListener("input", () => {
-      if (imagePreview) imagePreview.src = imageInput.value;
-    });
+    const handleUrlChange = () => {
+      const original = imageInput.value;
+      const converted = convertGoogleDriveUrl(original);
+      if (converted !== original) {
+        imageInput.value = converted;
+        showToast("แปลงลิงก์ Google Drive เป็นรูปภาพสำเร็จ!", "success");
+      }
+      if (imagePreview) imagePreview.src = converted;
+    };
+
+    imageInput.addEventListener("input", handleUrlChange);
+    imageInput.addEventListener("change", handleUrlChange);
+    imageInput.addEventListener("paste", () => setTimeout(handleUrlChange, 100));
   }
 
   // Submit Save
@@ -456,10 +486,11 @@ function loadAdminFormValues(durianId) {
   setVal("editDescription", data.description);
   setVal("editSelectionTips", data.selectionTips);
   setVal("editRecommendedFor", data.recommendedFor);
-  setVal("editImage", data.image);
+  const convertedImg = convertGoogleDriveUrl(data.image);
+  setVal("editImage", convertedImg);
 
   const preview = document.getElementById("adminImagePreview");
-  if (preview) preview.src = data.image;
+  if (preview) preview.src = convertedImg;
 
   // Set ranges
   const setRange = (id, val) => {
@@ -508,7 +539,7 @@ function saveAdminFormValues(durianId) {
     description: getVal("editDescription"),
     selectionTips: getVal("editSelectionTips"),
     recommendedFor: getVal("editRecommendedFor"),
-    image: getVal("editImage"),
+    image: convertGoogleDriveUrl(getVal("editImage")),
     sweetness: getNumVal("editSweetness"),
     creaminess: getNumVal("editCreaminess"),
     aroma: getNumVal("editAroma"),
