@@ -173,11 +173,36 @@ if (window.firebase && !window.firebase.apps.length) {
 class DurianDataManager {
   constructor() {
     this.initLocalStorage();
+    this.initFirebaseSync();
   }
 
   initLocalStorage() {
     if (!localStorage.getItem(DURIAN_STORAGE_KEY)) {
       localStorage.setItem(DURIAN_STORAGE_KEY, JSON.stringify(INITIAL_DURIAN_DATA));
+    }
+  }
+
+  initFirebaseSync() {
+    if (window.firebase && window.firebase.database) {
+      try {
+        const dbRef = window.firebase.database().ref("durians");
+        
+        // Listen for universal real-time data changes across ALL devices!
+        dbRef.on("value", (snapshot) => {
+          const cloudData = snapshot.val();
+          if (cloudData) {
+            localStorage.setItem(DURIAN_STORAGE_KEY, JSON.stringify(cloudData));
+            window.dispatchEvent(new CustomEvent("durianDataChanged", { detail: { data: cloudData } }));
+          } else {
+            // First-time cloud initialization: populate Firebase DB with defaults
+            dbRef.set(INITIAL_DURIAN_DATA);
+          }
+        }, (err) => {
+          console.warn("Firebase Realtime DB sync notice (using LocalStorage fallback):", err);
+        });
+      } catch (e) {
+        console.warn("Firebase Database sync exception:", e);
+      }
     }
   }
 
@@ -207,18 +232,43 @@ class DurianDataManager {
     all[id] = { ...all[id], ...updatedFields, updatedAt: new Date().toISOString() };
     localStorage.setItem(DURIAN_STORAGE_KEY, JSON.stringify(all));
 
-    // Dispatch custom event for live page updates
+    // Universal Cloud Sync: Save to Firebase Realtime Database for all visitors!
+    if (window.firebase && window.firebase.database) {
+      try {
+        window.firebase.database().ref(`durians/${id}`).set(all[id])
+          .then(() => console.log(`Universal sync to Firebase DB succeeded for ${id}`))
+          .catch(err => console.warn(`Firebase DB sync notice:`, err));
+      } catch (err) {
+        console.warn("Firebase DB save exception:", err);
+      }
+    }
+
+    // Dispatch custom event for live page reactive update
     window.dispatchEvent(new CustomEvent("durianDataChanged", { detail: { id, data: all[id] } }));
     return all[id];
   }
 
   saveAllDurians(fullDataset) {
     localStorage.setItem(DURIAN_STORAGE_KEY, JSON.stringify(fullDataset));
+    if (window.firebase && window.firebase.database) {
+      try {
+        window.firebase.database().ref("durians").set(fullDataset);
+      } catch (err) {
+        console.warn("Firebase DB saveAll exception:", err);
+      }
+    }
     window.dispatchEvent(new CustomEvent("durianDataChanged", { detail: { data: fullDataset } }));
   }
 
   resetToDefaults() {
     localStorage.setItem(DURIAN_STORAGE_KEY, JSON.stringify(INITIAL_DURIAN_DATA));
+    if (window.firebase && window.firebase.database) {
+      try {
+        window.firebase.database().ref("durians").set(INITIAL_DURIAN_DATA);
+      } catch (err) {
+        console.warn("Firebase DB reset exception:", err);
+      }
+    }
     window.dispatchEvent(new CustomEvent("durianDataChanged", { detail: { data: INITIAL_DURIAN_DATA } }));
     return INITIAL_DURIAN_DATA;
   }
