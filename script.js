@@ -1,552 +1,713 @@
-/**
- * Durian Website Main JavaScript Controller
- */
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, update, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyD_CUkSiqoX2szxgZuLTqdsfR20LETYOF4",
+    authDomain: "smartfarm-kmitl.firebaseapp.com",
+    databaseURL: "https://smartfarm-kmitl-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "smartfarm-kmitl",
+    storageBucket: "smartfarm-kmitl.firebasestorage.app",
+    messagingSenderId: "819207526985",
+    appId: "1:819207526985:web:0aca2227ba7ab28241fd98",
+    measurementId: "G-R2EMB9PXNS"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
 
 document.addEventListener("DOMContentLoaded", () => {
-  initNavbar();
-  
-  // Identify active page type
-  const path = window.location.pathname.toLowerCase();
-  
-  if (path.includes("main.html") || path.endsWith("/") || path.endsWith("durian") || (!path.includes(".html") && !path.includes("admin"))) {
-    initMainPage();
-  } else if (path.includes("admindurian.html")) {
-    initAdminPage();
-  } else {
-    initDetailPage();
-  }
-});
+    // Theme Engine (Light Mode Default)
+    const themeToggleBtn = document.getElementById("theme-toggle-btn");
+    const themeIconSun = document.getElementById("theme-icon-sun");
+    const themeIconMoon = document.getElementById("theme-icon-moon");
 
-// Toast notification helper
-function showToast(message, type = "success") {
-  let container = document.querySelector(".toast-container");
-  if (!container) {
-    container = document.createElement("div");
-    container.className = "toast-container";
-    document.body.appendChild(container);
-  }
+    let currentTheme = localStorage.getItem("kale_theme") || "light";
+    applyTheme(currentTheme);
 
-  const toast = document.createElement("div");
-  toast.className = `toast toast-${type}`;
-  toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span> <div>${message}</div>`;
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateX(100%)";
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
-}
-
-// Google Drive & Cloud Image Link Converter
-function convertGoogleDriveUrl(url) {
-  if (!url || typeof url !== 'string') return url;
-  
-  const trimmed = url.trim();
-
-  // Match Google Drive /file/d/FILE_ID
-  const matchFileD = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (matchFileD && matchFileD[1]) {
-    return `https://lh3.googleusercontent.com/d/${matchFileD[1]}`;
-  }
-
-  // Match Google Drive ?id=FILE_ID or &id=FILE_ID
-  const matchId = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (matchId && matchId[1]) {
-    return `https://lh3.googleusercontent.com/d/${matchId[1]}`;
-  }
-
-  return trimmed;
-}
-
-// Global Navbar & Mobile Bottom Bar Handler
-function initNavbar() {
-  const currentPath = window.location.pathname.split("/").pop() || "main.html";
-  const navLinks = document.querySelectorAll(".nav-link");
-  const bottomTabs = document.querySelectorAll(".bottom-tab");
-
-  const setActive = (elements) => {
-    elements.forEach(link => {
-      const href = link.getAttribute("href");
-      if (href === currentPath || (currentPath === "" && href === "main.html")) {
-        link.classList.add("active");
-      } else {
-        link.classList.remove("active");
-      }
-    });
-  };
-
-  setActive(navLinks);
-  setActive(bottomTabs);
-
-  // Listen for storage changes across tabs
-  window.addEventListener("durianDataChanged", (e) => {
-    console.log("Data updated dynamically:", e.detail);
-    const activePath = window.location.pathname.toLowerCase();
-    if (activePath.includes("main.html")) {
-      renderMainPageGrid();
-    } else if (!activePath.includes("admindurian.html")) {
-      initDetailPage();
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener("click", () => {
+            currentTheme = currentTheme === "light" ? "dark" : "light";
+            localStorage.setItem("kale_theme", currentTheme);
+            applyTheme(currentTheme);
+            updateChartTheme();
+        });
     }
-  });
-}
 
-/**
- * Main Summary Page (main.html) Controller
- */
-let currentSearchTerm = "";
-let currentFilter = "all";
+    function applyTheme(theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+        if (theme === "dark") {
+            if (themeIconSun) themeIconSun.style.display = "none";
+            if (themeIconMoon) themeIconMoon.style.display = "block";
+        } else {
+            if (themeIconSun) themeIconSun.style.display = "block";
+            if (themeIconMoon) themeIconMoon.style.display = "none";
+        }
+    }
 
-function initMainPage() {
-  const searchInput = document.getElementById("durianSearchInput");
-  const filterBtns = document.querySelectorAll(".filter-btn");
+    // --- Tab Navigation Engine (3 User Tabs) ---
+    const navDashboard = document.getElementById("nav-tab-dashboard");
+    const navControl = document.getElementById("nav-tab-control");
+    const navSettings = document.getElementById("nav-tab-settings");
 
-  if (searchInput) {
-    searchInput.addEventListener("input", (e) => {
-      currentSearchTerm = e.target.value.toLowerCase().trim();
-      renderMainPageGrid();
+    const viewDashboard = document.getElementById("view-dashboard");
+    const viewControl = document.getElementById("view-control");
+    const viewSettings = document.getElementById("view-settings");
+
+    const tabs = [
+        { nav: navDashboard, view: viewDashboard },
+        { nav: navControl, view: viewControl },
+        { nav: navSettings, view: viewSettings }
+    ];
+
+    tabs.forEach(({ nav, view }) => {
+        if (nav && view) {
+            nav.addEventListener("click", () => {
+                tabs.forEach(t => {
+                    if (t.nav) t.nav.classList.remove("active");
+                    if (t.view) t.view.classList.remove("active");
+                });
+                nav.classList.add("active");
+                view.classList.add("active");
+            });
+        }
     });
-  }
 
-  filterBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      filterBtns.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentFilter = btn.getAttribute("data-filter");
-      renderMainPageGrid();
-    });
-  });
+    // Sensor Elements
+    const moistureVal = document.getElementById("moisture-val");
+    const moistureBar = document.getElementById("moisture-bar");
+    const moistureStatusText = document.getElementById("moisture-status-text");
+    const moistureStatusDot = document.getElementById("moisture-status-dot");
 
-  renderMainPageGrid();
-  renderComparisonTable();
-}
+    const tempVal = document.getElementById("temp-val");
+    const tempErrDot = document.getElementById("temp-err-dot");
+    const tempStatusText = document.getElementById("temp-status-text");
 
-function renderMainPageGrid() {
-  const gridContainer = document.getElementById("durianGrid");
-  if (!gridContainer) return;
+    const humidVal = document.getElementById("humid-val");
+    const humidErrDot = document.getElementById("humid-err-dot");
+    const humidStatusText = document.getElementById("humid-status-text");
 
-  const durians = window.durianManager.getAllDurians();
-  let list = Object.values(durians);
+    // Dashboard Read-Only Badges
+    const dashPumpBadge = document.getElementById("dash-pump-badge");
+    const dashPumpDot = document.getElementById("dash-pump-dot");
+    const dashPumpText = document.getElementById("dash-pump-text");
+    const dashModeBadge = document.getElementById("dash-mode-badge");
+    const dashModeText = document.getElementById("dash-mode-text");
 
-  // Apply Search Filter
-  if (currentSearchTerm) {
-    list = list.filter(item => 
-      item.nameTh.toLowerCase().includes(currentSearchTerm) ||
-      item.nameEn.toLowerCase().includes(currentSearchTerm) ||
-      item.tagline.toLowerCase().includes(currentSearchTerm) ||
-      item.description.toLowerCase().includes(currentSearchTerm)
-    );
-  }
+    // Alert Banner Element
+    const criticalAlertBanner = document.getElementById("critical-alert-banner");
+    const alertBannerText = document.getElementById("alert-banner-text");
 
-  // Apply Category Filter Pills
-  if (currentFilter === "sweet") {
-    list = list.filter(item => item.sweetness >= 9);
-  } else if (currentFilter === "cream") {
-    list = list.filter(item => item.creaminess >= 9);
-  } else if (currentFilter === "rare") {
-    list = list.filter(item => item.id === "kobchainam" || item.id === "puangmanee" || item.id === "kanyao");
-  } else if (currentFilter === "popular") {
-    list = list.filter(item => item.id === "monthong" || item.id === "kanyao" || item.id === "kradum");
-  }
+    // Recommendations Elements (Dashboard View)
+    const recTextMoisture = document.getElementById("rec-text-moisture");
+    const recTextTemp = document.getElementById("rec-text-temp");
+    const recTextGeneral = document.getElementById("rec-text-general");
 
-  if (list.length === 0) {
-    gridContainer.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text-muted);">
-        <p style="font-size: 1.2rem;">ไม่พบข้อมูลสายพันธุ์ทุเรียนที่ตรงกับเงื่อนไขการค้นหา</p>
-      </div>
-    `;
-    return;
-  }
+    // Control Elements
+    const btnModeManual = document.getElementById("btn-mode-manual");
+    const btnModeAuto = document.getElementById("btn-mode-auto");
+    const waterBtn = document.getElementById("water-btn");
+    const pumpStatusDot = document.getElementById("pump-status-dot");
+    const pumpStatusText = document.getElementById("pump-status-text");
 
-  const pageMap = {
-    kanyao: "kanyao.html",
-    monthong: "monthong.html",
-    kradum: "kradum.html",
-    puangmanee: "puangmanee.html",
-    kobchainam: "kobchainam.html"
-  };
+    // Timer Presets & Countdown Elements
+    const timerBtns = document.querySelectorAll(".timer-btn");
+    const pumpCountdownBadge = document.getElementById("pump-countdown-badge");
+    const countdownTimerText = document.getElementById("countdown-timer-text");
+    let selectedTimerMinutes = 0; // 0 = continuous manual
+    let countdownInterval = null;
+    let timerRemainingSeconds = 0;
 
-  gridContainer.innerHTML = list.map(item => `
-    <div class="durian-card" data-id="${item.id}">
-      <div class="card-image-wrap">
-        <img src="${convertGoogleDriveUrl(item.image)}" alt="${item.nameTh}" onerror="this.src='assets/hero_durian.png'">
-        <span class="card-badge">${item.origin.split('/')[0]}</span>
-      </div>
-      <div class="card-body">
-        <div class="card-header">
-          <h3 class="card-title">${item.nameTh}</h3>
-          <span class="card-subtitle">${item.nameEn}</span>
-        </div>
-        <p class="card-desc">${item.tagline}</p>
-        
-        <div class="flavor-meters">
-          <div class="meter-item">
-            <div class="meter-label"><span>หวาน</span><span>${item.sweetness}/10</span></div>
-            <div class="meter-bar"><div class="meter-fill" style="width: ${item.sweetness * 10}%"></div></div>
-          </div>
-          <div class="meter-item">
-            <div class="meter-label"><span>มัน/ครีม</span><span>${item.creaminess}/10</span></div>
-            <div class="meter-bar"><div class="meter-fill" style="width: ${item.creaminess * 10}%"></div></div>
-          </div>
-          <div class="meter-item">
-            <div class="meter-label"><span>ความหอม</span><span>${item.aroma}/10</span></div>
-            <div class="meter-bar"><div class="meter-fill" style="width: ${item.aroma * 10}%"></div></div>
-          </div>
-          <div class="meter-item">
-            <div class="meter-label"><span>ความหนาเนื้อ</span><span>${item.fleshThickness}/10</span></div>
-            <div class="meter-bar"><div class="meter-fill" style="width: ${item.fleshThickness * 10}%"></div></div>
-          </div>
-        </div>
+    const thresholdMinInput = document.getElementById("threshold-min");
+    const thresholdMaxInput = document.getElementById("threshold-max");
+    const saveThresholdBtn = document.getElementById("save-threshold-btn");
 
-        <div class="card-footer">
-          <span class="price-tag">🏷️ ${item.priceRange.split('(')[0]}</span>
-          <a href="${pageMap[item.id] || '#'}" class="btn-detail">อ่านรายละเอียด ➔</a>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
+    const statusDot = document.getElementById("connection-status");
+    const statusText = document.getElementById("connection-text");
+    const lastUpdateTimeText = document.getElementById("last-update-time");
 
-function renderComparisonTable() {
-  const tableBody = document.getElementById("comparisonTableBody");
-  if (!tableBody) return;
+    const heroTemp = document.getElementById("hero-temp");
 
-  const durians = Object.values(window.durianManager.getAllDurians());
-  const pageMap = {
-    kanyao: "kanyao.html",
-    monthong: "monthong.html",
-    kradum: "kradum.html",
-    puangmanee: "puangmanee.html",
-    kobchainam: "kobchainam.html"
-  };
+    // Login/Auth UI
+    const loginModal = document.getElementById("login-modal");
+    const btnShowLogin = document.getElementById("btn-show-login");
+    const btnLogout = document.getElementById("btn-logout");
+    const emailInput = document.getElementById("login-email");
+    const passwordInput = document.getElementById("login-password");
+    const btnLoginSubmit = document.getElementById("btn-login-submit");
+    const btnLoginCancel = document.getElementById("btn-login-cancel");
+    const errorText = document.getElementById("login-error");
 
-  tableBody.innerHTML = durians.map(d => `
-    <tr>
-      <td>
-        <strong style="color: var(--text-main); font-size: 1.05rem;">
-          <a href="${pageMap[d.id]}" style="color: inherit; text-decoration: none;">${d.nameTh}</a>
-        </strong><br>
-        <small style="color: var(--text-muted);">${d.nameEn}</small>
-      </td>
-      <td><span style="color: var(--gold-primary); font-weight:700;">${d.sweetness}</span> / 10</td>
-      <td><span style="color: var(--gold-primary); font-weight:700;">${d.creaminess}</span> / 10</td>
-      <td>${d.fleshColor}</td>
-      <td>${d.harvestDays}</td>
-      <td><span class="price-tag">${d.priceRange.split('(')[0]}</span></td>
-      <td><a href="${pageMap[d.id]}" class="btn-detail" style="padding: 6px 14px; font-size: 0.78rem;">เข้าชม</a></td>
-    </tr>
-  `).join('');
-}
+    const controlLockOverlay = document.getElementById("control-lock-overlay");
 
-/**
- * Individual Durian Detail Pages Controller
- */
-function initDetailPage() {
-  const path = window.location.pathname.toLowerCase();
-  let durianId = null;
+    // State
+    let isAutoMode = true;
+    let isWatering = false;
+    let thresholdMin = 30;
+    let thresholdMax = 60;
+    let lastHeartbeatTime = Date.now();
+    let isDeviceOffline = false;
+    let isAuthenticated = false;
 
-  if (path.includes("kanyao")) durianId = "kanyao";
-  else if (path.includes("monthong")) durianId = "monthong";
-  else if (path.includes("kradum")) durianId = "kradum";
-  else if (path.includes("puangmanee")) durianId = "puangmanee";
-  else if (path.includes("kobchainam")) durianId = "kobchainam";
+    // --- Chart.js Initialization (24 Hours History Persistent) ---
+    let moistureChart = null;
+    const maxHistoryPoints = 288; // 24 Hours x 12 (5-min intervals) = 288 points
+    const chartLabels = [];
+    const chartDataPoints = [];
 
-  if (!durianId) return;
+    initMoistureChart();
 
-  const data = window.durianManager.getDurianById(durianId);
-  if (!data) return;
+    function initMoistureChart() {
+        const ctx = document.getElementById('moisture-trend-chart');
+        if (!ctx) return;
 
-  // Set Page Title
-  document.title = `${data.nameTh} (${data.nameEn}) - ข้อมูลสายพันธุ์ทุเรียนไทย`;
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+        const strokeColor = "#2563eb";
+        const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(15,23,42,0.06)";
+        const textColor = isDark ? "#94a3b8" : "#64748b";
 
-  // Bind Dynamic Data to Detail Page Elements
-  const elImage = document.getElementById("detailImage");
-  const elTitle = document.getElementById("detailTitle");
-  const elSubtitle = document.getElementById("detailSubtitle");
-  const elTagline = document.getElementById("detailTagline");
-  const elDesc = document.getElementById("detailDescription");
-  const elPrice = document.getElementById("detailPrice");
-  const elHarvest = document.getElementById("detailHarvest");
-  const elWeight = document.getElementById("detailWeight");
-  const elColor = document.getElementById("detailColor");
-  const elSeed = document.getElementById("detailSeed");
-  const elOrigin = document.getElementById("detailOrigin");
-  const elTips = document.getElementById("detailTips");
-  const elRec = document.getElementById("detailRec");
-  const elCharList = document.getElementById("detailCharacteristics");
+        moistureChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'ความชื้นดิน (%)',
+                    data: chartDataPoints,
+                    borderColor: strokeColor,
+                    borderWidth: 2.5,
+                    pointBackgroundColor: strokeColor,
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                    tension: 0.3,
+                    fill: true,
+                    backgroundColor: (context) => {
+                        const bgCtx = context.chart.ctx;
+                        const gradient = bgCtx.createLinearGradient(0, 0, 0, 150);
+                        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
+                        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+                        return gradient;
+                    }
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: (ctx) => `ความชื้นดิน: ${ctx.parsed.y}%`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: textColor,
+                            font: { family: 'Prompt', size: 10 },
+                            maxTicksLimit: 8
+                        }
+                    },
+                    y: {
+                        min: 0,
+                        max: 100,
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { family: 'Prompt', size: 10 } }
+                    }
+                }
+            }
+        });
+    }
 
-  if (elImage) elImage.src = data.image;
-  if (elTitle) elTitle.textContent = data.nameTh;
-  if (elSubtitle) elSubtitle.textContent = data.nameEn;
-  if (elTagline) elTagline.textContent = data.tagline;
-  if (elDesc) elDesc.textContent = data.description;
-  if (elPrice) elPrice.textContent = data.priceRange;
-  if (elHarvest) elHarvest.textContent = data.harvestDays;
-  if (elWeight) elWeight.textContent = data.fruitWeight;
-  if (elColor) elColor.textContent = data.fleshColor;
-  if (elSeed) elSeed.textContent = data.seedSize;
-  if (elOrigin) elOrigin.textContent = data.origin;
-  if (elTips) elTips.textContent = data.selectionTips;
-  if (elRec) elRec.textContent = data.recommendedFor;
+    function updateChartTheme() {
+        if (!moistureChart) return;
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+        const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(15,23,42,0.06)";
+        const textColor = isDark ? "#94a3b8" : "#64748b";
 
-  // Flavor meters
-  const setMeter = (id, val) => {
-    const fill = document.getElementById(`meter${id}`);
-    const num = document.getElementById(`num${id}`);
-    if (fill) fill.style.width = `${val * 10}%`;
-    if (num) num.textContent = `${val}/10`;
-  };
+        moistureChart.options.scales.x.grid.color = gridColor;
+        moistureChart.options.scales.x.ticks.color = textColor;
+        moistureChart.options.scales.y.grid.color = gridColor;
+        moistureChart.options.scales.y.ticks.color = textColor;
+        moistureChart.update();
+    }
 
-  setMeter("Sweetness", data.sweetness);
-  setMeter("Creaminess", data.creaminess);
-  setMeter("Aroma", data.aroma);
-  setMeter("FleshThickness", data.fleshThickness);
-
-  // Render characteristics list
-  if (elCharList && data.characteristics) {
-    elCharList.innerHTML = data.characteristics.map(c => `<li>${c}</li>`).join('');
-  }
-}
-
-/**
- * Admin Dashboard Controller (Admindurian.html)
- */
-function initAdminPage() {
-  const loginModal = document.getElementById("loginModal");
-  const adminContent = document.getElementById("adminContent");
-  const loginForm = document.getElementById("loginForm");
-  const btnLogout = document.getElementById("btnLogout");
-
-  // Check login state
-  if (window.durianAuth.isLoggedIn()) {
-    if (loginModal) loginModal.style.display = "none";
-    if (adminContent) adminContent.style.display = "block";
-    setupAdminFormControls();
-  } else {
-    if (loginModal) loginModal.style.display = "flex";
-    if (adminContent) adminContent.style.display = "none";
-  }
-
-  if (loginForm) {
-    loginForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const email = document.getElementById("loginEmail").value;
-      const pass = document.getElementById("loginPassword").value;
-
-      window.durianAuth.login(email, pass)
-        .then(() => {
-          showToast("เข้าสู่ระบบเรียบร้อยแล้ว!", "success");
-          if (loginModal) loginModal.style.display = "none";
-          if (adminContent) adminContent.style.display = "block";
-          setupAdminFormControls();
-        })
-        .catch(err => {
-          showToast(err.message, "error");
+    // --- Timer Preset Handlers ---
+    timerBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            timerBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            selectedTimerMinutes = parseInt(btn.getAttribute("data-minutes")) || 0;
         });
     });
-  }
 
-  if (btnLogout) {
-    btnLogout.addEventListener("click", () => {
-      window.durianAuth.logout();
-    });
-  }
-}
+    // --- Start Public Listeners Immediately ---
+    startDatabaseListeners();
 
-let activeAdminTab = "monthong";
-
-function setupAdminFormControls() {
-  const tabBtns = document.querySelectorAll(".tab-btn");
-  const adminForm = document.getElementById("adminForm");
-  const btnReset = document.getElementById("btnResetDefaults");
-
-  tabBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      tabBtns.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      activeAdminTab = btn.getAttribute("data-tab");
-      loadAdminFormValues(activeAdminTab);
-    });
-  });
-
-  // Range Slider live output updates
-  const ranges = ["editSweetness", "editCreaminess", "editAroma", "editFleshThickness"];
-  ranges.forEach(rId => {
-    const input = document.getElementById(rId);
-    const output = document.getElementById(`${rId}Val`);
-    if (input && output) {
-      input.addEventListener("input", () => {
-        output.textContent = `${input.value}/10`;
-      });
-    }
-  });
-
-  // File Upload image handler (Firebase Storage + Base64 Local Fallback)
-  const fileInput = document.getElementById("editImageFile");
-  const imageInput = document.getElementById("editImage");
-  const imagePreview = document.getElementById("adminImagePreview");
-
-  if (fileInput) {
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      // Always read local DataURL first so preview and save work 100% without CORS errors
-      readAsDataURLFallback(file, false);
-
-      // Attempt optional Firebase Storage upload in background
-      if (window.firebase && window.firebase.storage) {
-        try {
-          const storageRef = window.firebase.storage().ref();
-          const fileRef = storageRef.child(`durians/${Date.now()}_${file.name}`);
-          fileRef.put(file).then((snapshot) => {
-            return snapshot.ref.getDownloadURL();
-          }).then((downloadURL) => {
-            if (imageInput) imageInput.value = downloadURL;
-            if (imagePreview) imagePreview.src = downloadURL;
-            showToast("อัปโหลดรูปขึ้น Firebase Storage สำเร็จ!", "success");
-          }).catch((err) => {
-            console.warn("Firebase Storage CORS/Upload notice (using Local Base64 instead):", err);
-            showToast("บันทึกรูปภาพลง Local Storage เรียบร้อย", "success");
-          });
-        } catch(err) {
-          console.warn("Firebase Storage Exception:", err);
+    // --- Authentication Flow ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            isAuthenticated = true;
+            loginModal.style.display = 'none';
+            btnShowLogin.style.display = 'none';
+            btnLogout.style.display = 'flex';
+        } else {
+            isAuthenticated = false;
+            btnShowLogin.style.display = 'flex';
+            btnLogout.style.display = 'none';
         }
-      }
     });
-  }
 
-  function readAsDataURLFallback(file, showSuccessToast = true) {
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      const dataUrl = evt.target.result;
-      if (imageInput) imageInput.value = dataUrl;
-      if (imagePreview) imagePreview.src = dataUrl;
-      if (showSuccessToast) showToast("แปลงรูปภาพเป็น DataURL สำเร็จ!", "success");
-    };
-    reader.readAsDataURL(file);
-  }
+    btnShowLogin.addEventListener("click", () => {
+        loginModal.style.display = 'flex';
+        errorText.innerText = "";
+    });
+    btnLoginCancel.addEventListener("click", () => loginModal.style.display = 'none');
 
-  // Google Drive URL Auto-Converter on Paste / Input
-  if (imageInput) {
-    const handleUrlChange = () => {
-      const original = imageInput.value;
-      const converted = convertGoogleDriveUrl(original);
-      if (converted !== original) {
-        imageInput.value = converted;
-        showToast("แปลงลิงก์ Google Drive เป็นรูปภาพสำเร็จ!", "success");
-      }
-      if (imagePreview) imagePreview.src = converted;
-    };
+    btnLoginSubmit.addEventListener("click", () => {
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        btnLoginSubmit.innerText = "Processing...";
+        errorText.innerText = "";
+        signInWithEmailAndPassword(auth, email, password)
+            .then(() => {
+                btnLoginSubmit.innerText = "Login";
+                emailInput.value = "";
+                passwordInput.value = "";
+            })
+            .catch((error) => {
+                btnLoginSubmit.innerText = "Login";
+                errorText.innerText = "รหัสผ่านไม่ถูกต้อง";
+            });
+    });
 
-    imageInput.addEventListener("input", handleUrlChange);
-    imageInput.addEventListener("change", handleUrlChange);
-    imageInput.addEventListener("paste", () => setTimeout(handleUrlChange, 100));
-  }
+    btnLogout.addEventListener("click", () => signOut(auth));
 
-  // Submit Save
-  if (adminForm) {
-    adminForm.onsubmit = (e) => {
-      e.preventDefault();
-      saveAdminFormValues(activeAdminTab);
-    };
-  }
+    // --- Firebase Database Listeners ---
 
-  if (btnReset) {
-    btnReset.onclick = () => {
-      if (confirm("คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น?")) {
-        window.durianManager.resetToDefaults();
-        loadAdminFormValues(activeAdminTab);
-        showToast("รีเซ็ตข้อมูลเป็นค่าเริ่มต้นเรียบร้อยแล้ว!", "success");
-      }
-    };
-  }
+    function startDatabaseListeners() {
+        // Monitor Heartbeat
+        const heartbeatRef = ref(db, 'status/heartbeat');
+        onValue(heartbeatRef, (snapshot) => {
+            if (snapshot.exists()) {
+                lastHeartbeatTime = Date.now();
+                updateLastUpdateTimeUI();
+                if (isDeviceOffline) {
+                    isDeviceOffline = false;
+                    updateConnectionStatus(true);
+                }
+            }
+        });
 
-  loadAdminFormValues(activeAdminTab);
-}
+        // Offline Checker
+        setInterval(() => {
+            if (Date.now() - lastHeartbeatTime > 15000) {
+                if (!isDeviceOffline) {
+                    isDeviceOffline = true;
+                    updateConnectionStatus(false);
+                    setOfflineUI();
+                }
+            }
+        }, 2000);
 
-function loadAdminFormValues(durianId) {
-  const data = window.durianManager.getDurianById(durianId);
-  if (!data) return;
+        // 1. Listen to Sensor Data (Live Realtime Reads)
+        const sensorsRef = ref(db, 'sensors');
+        onValue(sensorsRef, (snapshot) => {
+            if (isDeviceOffline) return;
 
-  const setVal = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.value = val || "";
-  };
+            const data = snapshot.val();
+            if (data) {
+                updateConnectionStatus(true);
 
-  setVal("editNameTh", data.nameTh);
-  setVal("editNameEn", data.nameEn);
-  setVal("editTagline", data.tagline);
-  setVal("editPriceRange", data.priceRange);
-  setVal("editOrigin", data.origin);
-  setVal("editHarvestDays", data.harvestDays);
-  setVal("editFruitWeight", data.fruitWeight);
-  setVal("editFleshColor", data.fleshColor);
-  setVal("editSeedSize", data.seedSize);
-  setVal("editDescription", data.description);
-  setVal("editSelectionTips", data.selectionTips);
-  setVal("editRecommendedFor", data.recommendedFor);
-  const convertedImg = convertGoogleDriveUrl(data.image);
-  setVal("editImage", convertedImg);
+                // Moisture Logic
+                if (data.soil_moisture !== undefined) {
+                    moistureVal.innerText = data.soil_moisture;
+                    moistureBar.style.width = `${data.soil_moisture}%`;
 
-  const preview = document.getElementById("adminImagePreview");
-  if (preview) preview.src = convertedImg;
+                    if (data.soil_moisture < thresholdMin) {
+                        moistureStatusText.innerText = "ดินแห้งเกินไป";
+                        moistureStatusText.className = "red-text";
+                        moistureStatusDot.className = "dot red";
+                    } else if (data.soil_moisture >= thresholdMin && data.soil_moisture <= thresholdMax) {
+                        moistureStatusText.innerText = "เหมาะสม";
+                        moistureStatusText.className = "blue-text";
+                        moistureStatusDot.className = "dot green";
+                    } else {
+                        moistureStatusText.innerText = "ชื้นเกินไป";
+                        moistureStatusText.className = "orange-text";
+                        moistureStatusDot.className = "dot orange";
+                    }
+                }
 
-  // Set ranges
-  const setRange = (id, val) => {
-    const input = document.getElementById(id);
-    const output = document.getElementById(`${id}Val`);
-    if (input) input.value = val || 5;
-    if (output) output.textContent = `${val || 5}/10`;
-  };
+                // DHT Logic
+                if (data.dht_error === true) {
+                    tempVal.innerText = "--";
+                    humidVal.innerText = "--";
+                    tempStatusText.style.display = 'inline';
+                    tempErrDot.style.display = 'inline-block';
+                    humidStatusText.style.display = 'inline';
+                    humidErrDot.style.display = 'inline-block';
+                    heroTemp.innerText = "--°C";
+                } else {
+                    tempStatusText.style.display = 'none';
+                    tempErrDot.style.display = 'none';
+                    humidStatusText.style.display = 'none';
+                    humidErrDot.style.display = 'none';
 
-  setRange("editSweetness", data.sweetness);
-  setRange("editCreaminess", data.creaminess);
-  setRange("editAroma", data.aroma);
-  setRange("editFleshThickness", data.fleshThickness);
+                    if (data.temperature !== undefined) {
+                        tempVal.innerText = data.temperature.toFixed(1);
+                        heroTemp.innerText = `${data.temperature.toFixed(1)}°C`;
+                    }
+                    if (data.humidity !== undefined) humidVal.innerText = data.humidity.toFixed(1);
+                }
 
-  // Set characteristics textarea (joined by newline)
-  const charTextarea = document.getElementById("editCharacteristics");
-  if (charTextarea && data.characteristics) {
-    charTextarea.value = data.characteristics.join("\n");
-  }
-}
+                // Check Critical Alerts Banner
+                evaluateCriticalAlerts(data);
+            }
+        });
 
-function saveAdminFormValues(durianId) {
-  const getVal = (id) => {
-    const el = document.getElementById(id);
-    return el ? el.value.trim() : "";
-  };
+        // 2. Listen to Persistent 24-Hour History (/history)
+        const historyQuery = query(ref(db, 'history'), limitToLast(maxHistoryPoints));
+        onValue(historyQuery, (snapshot) => {
+            if (snapshot.exists() && moistureChart) {
+                chartLabels.length = 0;
+                chartDataPoints.length = 0;
 
-  const getNumVal = (id) => {
-    const el = document.getElementById(id);
-    return el ? parseFloat(el.value) : 5;
-  };
+                const historyData = snapshot.val();
+                Object.keys(historyData).forEach((key) => {
+                    const item = historyData[key];
+                    if (item && item.soil_moisture !== undefined) {
+                        let timeStr = "";
+                        if (item.timestamp && item.timestamp > 1600000000000) { // Check if it's a valid epoch time
+                            const date = new Date(item.timestamp);
+                            timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                            chartLabels.push(timeStr);
+                            chartDataPoints.push(item.soil_moisture);
+                        }
+                    }
+                });
 
-  const charRaw = getVal("editCharacteristics");
-  const characteristics = charRaw.split("\n").map(s => s.trim()).filter(s => s.length > 0);
+                moistureChart.update();
+            }
+        });
 
-  const updatedFields = {
-    nameTh: getVal("editNameTh"),
-    nameEn: getVal("editNameEn"),
-    tagline: getVal("editTagline"),
-    priceRange: getVal("editPriceRange"),
-    origin: getVal("editOrigin"),
-    harvestDays: getVal("editHarvestDays"),
-    fruitWeight: getVal("editFruitWeight"),
-    fleshColor: getVal("editFleshColor"),
-    seedSize: getVal("editSeedSize"),
-    description: getVal("editDescription"),
-    selectionTips: getVal("editSelectionTips"),
-    recommendedFor: getVal("editRecommendedFor"),
-    image: convertGoogleDriveUrl(getVal("editImage")),
-    sweetness: getNumVal("editSweetness"),
-    creaminess: getNumVal("editCreaminess"),
-    aroma: getNumVal("editAroma"),
-    fleshThickness: getNumVal("editFleshThickness"),
-    characteristics: characteristics
-  };
+        // 3. Listen to Config
+        const configRef = ref(db, 'state/config');
+        onValue(configRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                if (data.auto_mode !== undefined) {
+                    isAutoMode = data.auto_mode;
+                    updateUIVisibility();
+                    updateModeButtonsUI();
+                    updateDashboardModeUI();
+                }
+                if (data.threshold_min !== undefined) {
+                    thresholdMin = data.threshold_min;
+                    thresholdMinInput.value = data.threshold_min;
+                }
+                if (data.threshold_max !== undefined) {
+                    thresholdMax = data.threshold_max;
+                    thresholdMaxInput.value = data.threshold_max;
+                }
+            }
+        });
 
-  window.durianManager.saveDurian(durianId, updatedFields);
-  showToast(`บันทึกข้อมูล ${updatedFields.nameTh} สำเร็จเรียบร้อย!`, "success");
-}
+        // 4. Listen to Pump State
+        const controlRef = ref(db, 'state/control/pump_state');
+        onValue(controlRef, (snapshot) => {
+            const state = snapshot.val();
+            isWatering = state || false;
+
+            if (isWatering) {
+                pumpStatusText.innerText = "กำลังรดน้ำ";
+                pumpStatusDot.className = "dot green";
+                waterBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="6" width="12" height="12" rx="1"/>
+                    </svg>
+                    <span>ปิดวาล์วน้ำ</span>
+                `;
+                waterBtn.classList.add("active-pump");
+
+                // Dashboard Readout Update
+                if (dashPumpBadge && dashPumpText && dashPumpDot) {
+                    dashPumpBadge.className = "status-badge active-pump";
+                    dashPumpDot.className = "dot green";
+                    dashPumpText.innerText = "กำลังรดน้ำ";
+                }
+            } else {
+                pumpStatusText.innerText = "ปิดอยู่";
+                pumpStatusDot.className = "dot gray";
+                waterBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    <span>เปิดวาล์วน้ำ</span>
+                `;
+                waterBtn.classList.remove("active-pump");
+
+                // Clear Timer Countdown if pump is manually turned off
+                stopCountdownTimer();
+
+                // Dashboard Readout Update
+                if (dashPumpBadge && dashPumpText && dashPumpDot) {
+                    dashPumpBadge.className = "status-badge gray";
+                    dashPumpDot.className = "dot gray";
+                    dashPumpText.innerText = "ปิดอยู่";
+                }
+            }
+        });
+
+        // 5. Listen to Realtime Recommendations
+        const recRef = ref(db, 'recommendations');
+        onValue(recRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                if (data.moisture && recTextMoisture) recTextMoisture.innerText = data.moisture;
+                if (data.temp && recTextTemp) recTextTemp.innerText = data.temp;
+                if (data.general && recTextGeneral) recTextGeneral.innerText = data.general;
+            }
+        });
+    }
+
+    // --- 🚨 CRITICAL ALERT BANNER EVALUATOR ---
+    function evaluateCriticalAlerts(data) {
+        if (!criticalAlertBanner || !alertBannerText) return;
+
+        if (data.soil_moisture !== undefined && data.soil_moisture < thresholdMin) {
+            alertBannerText.innerText = `⚠️ เตือน: ความชื้นในดินต่ำเกินไป (${data.soil_moisture}%) ควรรดน้ำ`;
+            criticalAlertBanner.style.display = "flex";
+        } else if (data.temperature !== undefined && data.temperature > 35) {
+            alertBannerText.innerText = `🔥 เตือน: อุณหภูมิในฟาร์มสูงเกินไป (${data.temperature.toFixed(1)}°C) ควรระบายอากาศ`;
+            criticalAlertBanner.style.display = "flex";
+        } else if (data.soil_moisture !== undefined && data.soil_moisture > thresholdMax + 15) {
+            alertBannerText.innerText = `💧 เตือน: ความชื้นดินสูงเกินไป (${data.soil_moisture}%) ควรหยุดให้น้ำ`;
+            criticalAlertBanner.style.display = "flex";
+        } else {
+            criticalAlertBanner.style.display = "none";
+        }
+    }
+
+    // --- ⏱️ COUNTDOWN TIMER LOGIC ---
+    function startCountdownTimer(minutes) {
+        stopCountdownTimer();
+        if (minutes <= 0) return;
+
+        timerRemainingSeconds = minutes * 60;
+        updateCountdownDisplay();
+        pumpCountdownBadge.style.display = "block";
+
+        countdownInterval = setInterval(() => {
+            timerRemainingSeconds--;
+            if (timerRemainingSeconds <= 0) {
+                stopCountdownTimer();
+                // Turn off pump automatically
+                set(ref(db, 'state/control/pump_state'), false);
+            } else {
+                updateCountdownDisplay();
+            }
+        }, 1000);
+    }
+
+    function stopCountdownTimer() {
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+        }
+        if (pumpCountdownBadge) {
+            pumpCountdownBadge.style.display = "none";
+        }
+    }
+
+    function updateCountdownDisplay() {
+        if (!countdownTimerText) return;
+        const mins = Math.floor(timerRemainingSeconds / 60);
+        const secs = timerRemainingSeconds % 60;
+        countdownTimerText.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    // --- UI Write Actions ---
+
+    btnModeManual.addEventListener("click", () => {
+        set(ref(db, 'state/config/auto_mode'), false);
+    });
+
+    btnModeAuto.addEventListener("click", () => {
+        set(ref(db, 'state/config/auto_mode'), true);
+    });
+
+    saveThresholdBtn.addEventListener("click", () => {
+        const minVal = parseInt(thresholdMinInput.value);
+        const maxVal = parseInt(thresholdMaxInput.value);
+
+        if (minVal >= maxVal) {
+            alert("ค่า Min (ความชื้นต่ำสุด) ต้องน้อยกว่าค่า Max (ความชื้นสูงสุด) ครับ");
+            return;
+        }
+
+        saveThresholdBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>กำลังบันทึก...</span>
+        `;
+
+        const updates = {};
+        updates['threshold_min'] = minVal;
+        updates['threshold_max'] = maxVal;
+
+        update(ref(db, 'state/config'), updates).then(() => {
+            setTimeout(() => {
+                saveThresholdBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>บันทึกเกณฑ์สำเร็จ!</span>
+                `;
+                setTimeout(() => {
+                    saveThresholdBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        <span>บันทึกเกณฑ์ความชื้น</span>
+                    `;
+                }, 1500);
+            }, 300);
+        }).catch(err => {
+            console.error("Failed to save threshold", err);
+            saveThresholdBtn.innerHTML = "<span>เกิดข้อผิดพลาด!</span>";
+            setTimeout(() => {
+                saveThresholdBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    <span>บันทึกเกณฑ์ความชื้น</span>
+                `;
+            }, 2000);
+        });
+    });
+
+    waterBtn.addEventListener("click", () => {
+        if (isAutoMode) {
+            alert("ระบบอยู่ในโหมด Auto กรุณาสลับเป็นโหมด Manual ก่อนเปิดปั๊มน้ำครับ");
+            return;
+        }
+
+        const newState = !isWatering;
+        waterBtn.innerHTML = "<span>Processing...</span>";
+
+        const timerSec = newState ? (selectedTimerMinutes * 60) : 0;
+        const updates = {};
+        updates['pump_state'] = newState;
+        updates['pump_timer_sec'] = timerSec;
+
+        update(ref(db, 'state/control'), updates).then(() => {
+            if (newState && selectedTimerMinutes > 0) {
+                startCountdownTimer(selectedTimerMinutes);
+            } else {
+                stopCountdownTimer();
+            }
+        }).catch(err => {
+            console.error("Failed to toggle pump", err);
+            waterBtn.innerText = "Error";
+        });
+    });
+
+    // --- Helpers ---
+
+    function updateLastUpdateTimeUI() {
+        if (!lastUpdateTimeText) return;
+        const now = new Date();
+        const dateStr = String(now.getDate()).padStart(2, '0') + '/' +
+            String(now.getMonth() + 1).padStart(2, '0') + '/' +
+            now.getFullYear();
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0') + ':' +
+            String(now.getSeconds()).padStart(2, '0');
+        lastUpdateTimeText.innerText = `${dateStr} ${timeStr}`;
+    }
+
+    function updateModeButtonsUI() {
+        if (isAutoMode) {
+            btnModeAuto.classList.add('active');
+            btnModeManual.classList.remove('active');
+        } else {
+            btnModeManual.classList.add('active');
+            btnModeAuto.classList.remove('active');
+        }
+    }
+
+    function updateDashboardModeUI() {
+        if (dashModeBadge && dashModeText) {
+            if (isAutoMode) {
+                dashModeBadge.className = "status-badge primary";
+                dashModeText.innerText = "Auto";
+            } else {
+                dashModeBadge.className = "status-badge gray";
+                dashModeText.innerText = "Manual";
+            }
+        }
+    }
+
+    function updateUIVisibility() {
+        const timerWrapper = document.getElementById("timer-selection-wrapper");
+
+        if (isAutoMode) {
+            waterBtn.disabled = true;
+            waterBtn.style.opacity = '0.5';
+            if (timerWrapper) timerWrapper.style.opacity = '0.5';
+        } else {
+            waterBtn.disabled = false;
+            waterBtn.style.opacity = '1';
+            if (timerWrapper) timerWrapper.style.opacity = '1';
+        }
+    }
+
+    function updateConnectionStatus(connected) {
+        if (connected) {
+            statusDot.className = "status-dot connected";
+            statusText.innerText = "Connected to Cloud";
+            statusText.style.color = "var(--text-main)";
+        } else {
+            statusDot.className = "status-dot disconnected";
+            statusText.innerText = "Disconnected";
+            statusText.style.color = "var(--red)";
+        }
+    }
+
+    function setOfflineUI() {
+        moistureVal.innerText = "--";
+        tempVal.innerText = "--";
+        humidVal.innerText = "--";
+        moistureBar.style.width = `0%`;
+
+        moistureStatusText.innerText = "ไม่พบอุปกรณ์";
+        moistureStatusText.className = "red-text";
+        moistureStatusDot.className = "dot red";
+
+        tempStatusText.innerText = "ไม่พบอุปกรณ์";
+        tempStatusText.className = "red-text";
+        tempStatusText.style.display = 'inline';
+        tempErrDot.style.display = 'inline-block';
+
+        humidStatusText.innerText = "ไม่พบอุปกรณ์";
+        humidStatusText.className = "red-text";
+        humidStatusText.style.display = 'inline';
+        humidErrDot.style.display = 'inline-block';
+
+        if (criticalAlertBanner) criticalAlertBanner.style.display = "none";
+    }
+});
