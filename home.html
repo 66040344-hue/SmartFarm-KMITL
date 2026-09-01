@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>หลักสูตรการจัดการสมาร์ตฟาร์ม | Smart Farm Management KMITL</title>
+  <meta name="description" content="หลักสูตรการจัดการสมาร์ตฟาร์ม Smart Farm Management KMITL - นวัตกรรมการเกษตรแห่งอนาคต ผสาน IoT, AI, Automation และ Precision Farming สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง" />
+  <meta name="keywords" content="Smart Farm, KMITL, สมาร์ตฟาร์ม, การจัดการเกษตร, IoT เกษตร, AI เกษตร, สจล, เทคโนโลยีการเกษตร" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Orbitron:wght@400;600;700;900&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Main Styles -->
+  <link rel="stylesheet" href="home.css" />
+</head>
+<body class="cyber-theme">
+
+  <!-- Interactive Multi-layer Canvas Background -->
+  <div class="canvas-container">
+    <canvas id="bgCanvas"></canvas>
+    <div class="grid-overlay"></div>
+    <div class="vignette-overlay"></div>
+    <div class="laser-sweep"></div>
+  </div>
+
+  <!-- Custom Cursor Glow -->
+  <div class="cursor-follower" id="cursorFollower"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+
+  <!-- Audio Synthesizer Control -->
+  <button id="soundToggleBtn" class="sound-toggle-btn" aria-label="Toggle Sound Effects" data-tooltip="เปิด/ปิด เสียงเอฟเฟกต์">
+    <i data-lucide="volume-2" id="soundIcon"></i>
+    <span class="sound-wave"></span>
+  </button>
+
+  <!-- Background Controls Widget Floating Panel -->
+  <div class="bg-control-widget">
+    <div class="bg-widget-toggle" id="bgWidgetToggle" title="ปรับแต่งเอฟเฟกต์พื้นหลัง">
+      <i data-lucide="sliders"></i>
+      <span class="widget-label">FX Matrix</span>
+    </div>
+    <div class="bg-widget-panel" id="bgWidgetPanel">
+      <div class="widget-header">
+        <i data-lucide="cpu"></i>
+        <span>BACKGROUND FX ENGINE</span>
+        <button class="close-widget-btn" id="closeWidgetBtn">&times;</button>
+      </div>
+      <div class="widget-body">
+        <div class="control-group">
+          <label>Visual Mode</label>
+          <div class="mode-buttons">
+            <button class="mode-btn active" data-mode="network">
+              <i data-lucide="share-2"></i> IoT Neural
+            </button>
+            <button class="mode-btn" data-mode="bio">
+              <i data-lucide="sprout"></i> Bio-Particle
+            </button>
+            <button class="mode-btn" data-mode="grid">
+              <i data-lucide="grid"></i> Cyber Grid
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="label-row">
+            <label for="speedRange">Particle Speed</label>
+            <span id="speedVal" class="val-badge">1.0x</span>
+          </div>
+          <input type="range" id="speedRange" min="0.2" max="3.0" step="0.1" value="1.0" />
+        </div>
+
+        <div class="control-group">
+          <div class="label-row">
+            <label for="densityRange">Node Density</label>
+            <span id="densityVal" class="val-badge">Normal</span>
+          </div>
+          <input type="range" id="densityRange" min="40" max="150" step="10" value="80" />
+        </div>
+
+        <div class="control-group">
+          <label>Glow Pulse intensity</label>
+          <button class="pulse-toggle-btn active" id="pulseToggleBtn">
+            <i data-lucide="zap"></i> Hyper Neon Active
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar-header">
+    <nav class="nav-container">
+      <a href="#" class="brand-logo">
+        <div class="logo-icon">
+          <i data-lucide="sprout" class="sprout-icon"></i>
+          <div class="logo-ring"></div>
+        </div>
+        <div class="logo-text">
+          <span class="kmitl-text">KMITL</span>
+          <span class="sub-text">AGRI-TECH DISRUPTION</span>
+        </div>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#about" class="nav-link active"><i data-lucide="home"></i> หน้าแรก</a></li>
+        <li><a href="#curriculum" class="nav-link"><i data-lucide="book-open"></i> โครงสร้างหลักสูตร</a></li>
+        <li><a href="#simulator" class="nav-link"><i data-lucide="activity"></i> IoT Simulator</a></li>
+        <li><a href="#facilities" class="nav-link"><i data-lucide="microscope"></i> ห้องปฏิบัติการ</a></li>
+        <li><a href="#careers" class="nav-link"><i data-lucide="briefcase"></i> โอกาสสายอาชีพ</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="#admissionModal" class="btn-glow-primary open-modal-btn">
+          <i data-lucide="sparkles"></i> สมัครเรียน 2026
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main>
+
+    <!-- Hero Section -->
+    <section id="about" class="hero-section">
+      <div class="hero-container">
+        
+        <!-- Live Status Pill -->
+        <div class="status-pill glass-card">
+          <span class="status-dot"></span>
+          <span class="status-text">KMITL SMART FARM FACULTY • ADMISSIONS 2026 NOW OPEN</span>
+          <span class="tech-tag">IoT 4.0</span>
+        </div>
+
+        <!-- Main Heading Title -->
+        <div class="hero-header-box">
+          <h2 class="welcome-text glitch-text" data-text="ยินดีต้อนรับสู่">
+            ยินดีต้อนรับสู่
+          </h2>
+          <h1 class="main-title">
+            <span class="title-thai gradient-text-emerald">หลักสูตรการจัดการสมาร์ตฟาร์ม</span>
+            <span class="title-eng neon-glow-text">Smart Farm Management KMITL</span>
+          </h1>
+        </div>
+
+        <!-- Hero Subtitle -->
+        <p class="hero-subtitle">
+          ผสานพลังแห่ง <strong>IoT System, Artificial Intelligence (AI), Big Data</strong> และ <strong>Precision Robotics</strong>
+          ยกระดับเกษตรกรรมไทยสู่อนาคตที่ยั่งยืน เรียนรู้จากการปฏิบัติจริง ณ สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง
+        </p>
+
+        <!-- CTA Action Buttons -->
+        <div class="hero-cta-group">
+          <button class="btn-cyber-hero open-modal-btn">
+            <span class="btn-content">
+              <i data-lucide="send"></i> สมัครเข้าศึกษา / ลงทะเบียนสนใจ
+            </span>
+            <span class="btn-glitch"></span>
+          </button>
+
+          <a href="#simulator" class="btn-cyber-secondary">
+            <i data-lucide="play-circle"></i> ทดลองระบบ IoT Farm Sim
+          </a>
+
+          <a href="#curriculum" class="btn-cyber-outline">
+            <i data-lucide="file-text"></i> ดาวน์โหลดแผ่นพับหลักสูตร
+          </a>
+        </div>
+
+        <!-- Hero Live Counter Stats -->
+        <div class="hero-stats-grid">
+          <div class="stat-card glass-card">
+            <div class="stat-icon"><i data-lucide="cpu"></i></div>
+            <div class="stat-content">
+              <div class="stat-number" data-target="50">0</div>
+              <span class="stat-plus">+</span>
+              <div class="stat-label">IoT Sensor Labs & Kits</div>
+            </div>
+          </div>
+
+          <div class="stat-card glass-card">
+            <div class="stat-icon"><i data-lucide="award"></i></div>
+            <div class="stat-content">
+              <div class="stat-number" data-target="100">0</div>
+              <span class="stat-plus">%</span>
+              <div class="stat-label">Hands-on Practical Training</div>
+            </div>
+          </div>
+
+          <div class="stat-card glass-card">
+            <div class="stat-icon"><i data-lucide="trending-up"></i></div>
+            <div class="stat-content">
+              <div class="stat-number" data-target="98">0</div>
+              <span class="stat-plus">%</span>
+              <div class="stat-label">Career Placement Rate</div>
+            </div>
+          </div>
+
+          <div class="stat-card glass-card">
+            <div class="stat-icon"><i data-lucide="database"></i></div>
+            <div class="stat-content">
+              <div class="stat-number" data-target="24">0</div>
+              <span class="stat-plus">/7</span>
+              <div class="stat-label">Real-time Telemetry Farm</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Interactive Live IoT Farm Simulator -->
+    <section id="simulator" class="section-padding simulator-section">
+      <div class="section-header text-center">
+        <div class="badge-tech"><i data-lucide="radio"></i> LIVE TELEMETRY SIMULATOR</div>
+        <h2 class="section-title">ศูนย์ควบคุมและจำลองระบบ IoT ฟาร์มอัจฉริยะ KMITL</h2>
+        <p class="section-desc">ทดลองควบคุมระบบเซนเซอร์ สภาพแวดล้อม และระบบควบคุมอัตโนมัติแบบ Real-time</p>
+      </div>
+
+      <div class="simulator-container glass-card">
+        <div class="sim-top-bar">
+          <div class="sim-status">
+            <span class="blink-dot"></span> REALTIME TRANSMISSION: <strong>STATION KMITL-GREENHOUSE-01</strong>
+          </div>
+          <div class="sim-actions">
+            <button id="resetSimBtn" class="sim-btn"><i data-lucide="refresh-cw"></i> รีเซ็ตค่า</button>
+            <button id="autoModeBtn" class="sim-btn active"><i data-lucide="bot"></i> ระบบ AI อัตโนมัติ: ON</button>
+          </div>
+        </div>
+
+        <!-- Sensor Gauges Grid -->
+        <div class="sim-gauges-grid">
+          
+          <!-- Soil Moisture Gauge -->
+          <div class="gauge-card">
+            <div class="gauge-header">
+              <i data-lucide="droplets" class="icon-moisture"></i>
+              <span>ความชื้นในดิน (Soil Moisture)</span>
+            </div>
+            <div class="gauge-body">
+              <div class="circular-progress" id="moistureGauge" style="--percent: 75;">
+                <div class="inner-circle">
+                  <span id="moistureVal" class="gauge-val">75</span>
+                  <span class="gauge-unit">%</span>
+                </div>
+              </div>
+            </div>
+            <div class="gauge-footer">
+              <span class="status-tag status-good" id="moistureStatus">เหมาะสมดีเยี่ยม</span>
+            </div>
+          </div>
+
+          <!-- Ambient Temperature -->
+          <div class="gauge-card">
+            <div class="gauge-header">
+              <i data-lucide="thermometer" class="icon-temp"></i>
+              <span>อุณหภูมิอากาศ (Temp)</span>
+            </div>
+            <div class="gauge-body">
+              <div class="circular-progress temp-gauge" id="tempGauge" style="--percent: 56;">
+                <div class="inner-circle">
+                  <span id="tempVal" class="gauge-val">28.5</span>
+                  <span class="gauge-unit">°C</span>
+                </div>
+              </div>
+            </div>
+            <div class="gauge-footer">
+              <span class="status-tag status-good" id="tempStatus">ปกติ (โซนเย็น)</span>
+            </div>
+          </div>
+
+          <!-- EC / Nutrient Sensor -->
+          <div class="gauge-card">
+            <div class="gauge-header">
+              <i data-lucide="zap" class="icon-ec"></i>
+              <span>ค่าสารอาหาร (EC Value)</span>
+            </div>
+            <div class="gauge-body">
+              <div class="circular-progress ec-gauge" id="ecGauge" style="--percent: 65;">
+                <div class="inner-circle">
+                  <span id="ecVal" class="gauge-val">1.8</span>
+                  <span class="gauge-unit">dS/m</span>
+                </div>
+              </div>
+            </div>
+            <div class="gauge-footer">
+              <span class="status-tag status-good" id="ecStatus">สมดุลสารอาหาร 100%</span>
+            </div>
+          </div>
+
+          <!-- AI Crop Health Index -->
+          <div class="gauge-card">
+            <div class="gauge-header">
+              <i data-lucide="brain-circuit" class="icon-ai"></i>
+              <span>ดัชนีสุขภาพพืช AI</span>
+            </div>
+            <div class="gauge-body">
+              <div class="circular-progress ai-gauge" id="aiGauge" style="--percent: 96;">
+                <div class="inner-circle">
+                  <span id="aiVal" class="gauge-val">96</span>
+                  <span class="gauge-unit">%</span>
+                </div>
+              </div>
+            </div>
+            <div class="gauge-footer">
+              <span class="status-tag status-excellent">สุขภาพพืชสมบูรณ์</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Interactive Control Actuators -->
+        <div class="sim-actuators-panel">
+          <h3 class="panel-subtitle"><i data-lucide="toggle-right"></i> สั่งการอุปกรณ์ควบคุมระบบฟาร์ม (Actuators Control)</h3>
+          <div class="actuators-grid">
+            
+            <div class="actuator-item">
+              <div class="actuator-info">
+                <i data-lucide="waves"></i>
+                <div>
+                  <span class="act-name">ปั๊มรดน้ำอัจฉริยะ (Smart Water Pump)</span>
+                  <span class="act-desc">รดน้ำอัตโนมัติตามค่าความชื้นดิน</span>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="pumpSwitch" checked>
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="actuator-item">
+              <div class="actuator-info">
+                <i data-lucide="cloud-rain"></i>
+                <div>
+                  <span class="act-name">ระบบพ่นหมอกลดความร้อน (Mist Fogger)</span>
+                  <span class="act-desc">พ่นหมอกควบคุมความชื้นสัมพัทธ์</span>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="mistSwitch">
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="actuator-item">
+              <div class="actuator-info">
+                <i data-lucide="sun"></i>
+                <div>
+                  <span class="act-name">สแลนพรางแสงมอเตอร์ไฟฟ้า (Motorized Shading)</span>
+                  <span class="act-desc">ควบคุมปริมาณแสงแดดรับเข้า</span>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="shadeSwitch" checked>
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="actuator-item">
+              <div class="actuator-info">
+                <i data-lucide="wind"></i>
+                <div>
+                  <span class="act-name">พัดลมระบายอากาศ (Evap Ventilation)</span>
+                  <span class="act-desc">หมุนเวียนอากาศในโรงเรือน</span>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="fanSwitch" checked>
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Live Realtime Chart Graphic Canvas -->
+        <div class="sim-chart-container">
+          <div class="chart-header">
+            <span><i data-lucide="line-chart"></i> Realtime Telemetry Data Stream</span>
+            <div class="chart-legend">
+              <span class="legend-item leg-moisture">● Moisture</span>
+              <span class="legend-item leg-temp">● Temp</span>
+              <span class="legend-item leg-ec">● EC Rate</span>
+            </div>
+          </div>
+          <canvas id="simChartCanvas" height="120"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Curriculum Modules Section -->
+    <section id="curriculum" class="section-padding curriculum-section">
+      <div class="section-header text-center">
+        <div class="badge-tech"><i data-lucide="layers"></i> ADVANCED CURRICULUM</div>
+        <h2 class="section-title">โครงสร้างหลักสูตรและรายวิชาไฮไลต์</h2>
+        <p class="section-desc">ออกแบบหลักสูตรให้ตอบโจทย์ยุคเกษตรอัจฉริยะ 4.0 เน้นการสร้างนวัตกรและผู้ประกอบการเกษตรล้ำสมัย</p>
+      </div>
+
+      <div class="modules-grid">
+
+        <!-- Module 1 -->
+        <div class="module-card glass-card" data-module="1">
+          <div class="module-number">01</div>
+          <div class="module-icon"><i data-lucide="cpu"></i></div>
+          <h3 class="module-title">IoT, Sensors & Smart Microcontrollers</h3>
+          <p class="module-desc">การออกแบบเซนเซอร์วัดค่าในฟาร์ม ระบบ ESP32, LoRaWAN wireless, Edge Gateway และโปรโตคอล MQTT</p>
+          <div class="module-tags">
+            <span>ESP32</span>
+            <span>LoRaWAN</span>
+            <span>MQTT</span>
+            <span>Sensors</span>
+          </div>
+          <button class="view-module-btn"><i data-lucide="arrow-right"></i> ดูรายละเอียดวิชา</button>
+        </div>
+
+        <!-- Module 2 -->
+        <div class="module-card glass-card" data-module="2">
+          <div class="module-number">02</div>
+          <div class="module-icon"><i data-lucide="brain-circuit"></i></div>
+          <h3 class="module-title">AI & Computer Vision for Plant Diagnostics</h3>
+          <p class="module-desc">การใช้อัลกอริทึม AI ตรวจจับโรคพืช วิเคราะห์สภาพใบ ประเมินผลผลิต และคำนวณวันเก็บเกี่ยวด้วย Python & YOLO</p>
+          <div class="module-tags">
+            <span>Python</span>
+            <span>YOLOv8</span>
+            <span>TensorFlow</span>
+            <span>Computer Vision</span>
+          </div>
+          <button class="view-module-btn"><i data-lucide="arrow-right"></i> ดูรายละเอียดวิชา</button>
+        </div>
+
+        <!-- Module 3 -->
+        <div class="module-card glass-card" data-module="3">
+          <div class="module-number">03</div>
+          <div class="module-icon"><i data-lucide="bot"></i></div>
+          <h3 class="module-title">Agricultural Robotics & Drone Precision</h3>
+          <p class="module-desc">การบังคับและการตั้งโปรแกรมโดรนการเกษตรเพื่อสแกนพื้นที่ multispectral, ฉีดพ่นอัตโนมัติ และหุ่นยนต์ฟาร์ม</p>
+          <div class="module-tags">
+            <span>Agri Drones</span>
+            <span>Autonomous GIS</span>
+            <span>ROS 2</span>
+            <span>Mapping</span>
+          </div>
+          <button class="view-module-btn"><i data-lucide="arrow-right"></i> ดูรายละเอียดวิชา</button>
+        </div>
+
+        <!-- Module 4 -->
+        <div class="module-card glass-card" data-module="4">
+          <div class="module-number">04</div>
+          <div class="module-icon"><i data-lucide="settings"></i></div>
+          <h3 class="module-title">Hydroponics & Automated Greenhouse PLC</h3>
+          <p class="module-desc">การควบคุมโรงเรือนแบบปิดอัตโนมัติ การผสมสารอาหาร AB อัตโนมัติด้วยระบบ PLC และวิศวกรรมการปลูกพืชไร้ดิน</p>
+          <div class="module-tags">
+            <span>PLC Control</span>
+            <span>Hydroponics</span>
+            <span>Automated Nutrient</span>
+            <span>Climate Control</span>
+          </div>
+          <button class="view-module-btn"><i data-lucide="arrow-right"></i> ดูรายละเอียดวิชา</button>
+        </div>
+
+        <!-- Module 5 -->
+        <div class="module-card glass-card" data-module="5">
+          <div class="module-number">05</div>
+          <div class="module-icon"><i data-lucide="bar-chart-3"></i></div>
+          <h3 class="module-title">Agri-Data Analytics & Digital Enterprise</h3>
+          <p class="module-desc">การวิเคราะห์ข้อมูล Big Data ฟาร์ม ทำนายตลาดพืชผล วางแผนห่วงโซ่อุปทาน (Supply Chain) และธุรกิจ Agri-Startup</p>
+          <div class="module-tags">
+            <span>PowerBI</span>
+            <span>Agri-Business</span>
+            <span>Supply Chain</span>
+            <span>Yield Prediction</span>
+          </div>
+          <button class="view-module-btn"><i data-lucide="arrow-right"></i> ดูรายละเอียดวิชา</button>
+        </div>
+
+        <!-- Module 6 -->
+        <div class="module-card glass-card" data-module="6">
+          <div class="module-number">06</div>
+          <div class="module-icon"><i data-lucide="sprout"></i></div>
+          <h3 class="module-title">Capstone Smart Farm Project</h3>
+          <p class="module-desc">โปรเจกต์จบภาคปฏิบัติ สร้างระบบสมาร์ตฟาร์มใช้งานได้จริง ร่วมกับพันธมิตรแปลงใหญ่และบริษัทเกษตรชั้นนำ</p>
+          <div class="module-tags">
+            <span>Real Deployment</span>
+            <span>Industry Project</span>
+            <span>Incubator</span>
+          </div>
+          <button class="view-module-btn"><i data-lucide="arrow-right"></i> ดูรายละเอียดวิชา</button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Labs & Facilities Showcase -->
+    <section id="facilities" class="section-padding facilities-section">
+      <div class="section-header text-center">
+        <div class="badge-tech"><i data-lucide="shield"></i> HIGH-TECH LABS & GREENHOUSES</div>
+        <h2 class="section-title">เครื่องมือและห้องปฏิบัติการมาตรฐานสากล</h2>
+        <p class="section-desc">เรียนรู้กับเครื่องมือจริง นวัตกรรมล้ำสมัย ณ คณะเทคโนโลยีการเกษตร สจล.</p>
+      </div>
+
+      <div class="facilities-slider-grid">
+        <div class="facility-card glass-card">
+          <div class="facility-image-box">
+            <div class="facility-badge">IoT Lab 01</div>
+            <div class="fake-img-render img-greenhouse">
+              <i data-lucide="sun"></i>
+              <span>Automated High-Tech Greenhouse</span>
+            </div>
+          </div>
+          <div class="facility-info">
+            <h3>โรงเรือนไฮเทคควบคุมสภาพแวดล้อม 100%</h3>
+            <p>ติดตั้งเซนเซอร์ไร้สาย 64 จุด พร้อมระบบปรับอุณหภูมิ ความชื้น แสงสว่าง และพ่นหมอกแบบเรียลไทม์ผ่านคลาวด์</p>
+          </div>
+        </div>
+
+        <div class="facility-card glass-card">
+          <div class="facility-image-box">
+            <div class="facility-badge">Drone Hangar</div>
+            <div class="fake-img-render img-drone">
+              <i data-lucide="navigation"></i>
+              <span>Agri-Drone Testing Facility</span>
+            </div>
+          </div>
+          <div class="facility-info">
+            <h3>สนามทดสอบโดรนการเกษตรและสแกนพื้นที่</h3>
+            <p>ฝูงโดรนสแกนกล้อง multispectral ตรวจจับดัชนีพืช NDVI พร้อมระบบฉีดพ่นปุ๋ยและยาอัตโนมัติแบบพิกัดแม่นยำ</p>
+          </div>
+        </div>
+
+        <div class="facility-card glass-card">
+          <div class="facility-image-box">
+            <div class="facility-badge">AI Server Center</div>
+            <div class="fake-img-render img-ai">
+              <i data-lucide="cpu"></i>
+              <span>Agri-AI Edge Computing Station</span>
+            </div>
+          </div>
+          <div class="facility-info">
+            <h3>ศูนย์ประมวลผลปัญญาประดิษฐ์ทางการเกษตร</h3>
+            <p>เครื่องประมวลผล GPU ความเร็วสูงสำหรับเทรนโมเดล AI จำแนกโรคพืชและคาดการณ์สภาพอากาศแบบเฉพาะพื้นที่</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Career Opportunities Section -->
+    <section id="careers" class="section-padding careers-section">
+      <div class="section-header text-center">
+        <div class="badge-tech"><i data-lucide="rocket"></i> FUTURE CAREERS</div>
+        <h2 class="section-title">สายอาชีพแห่งอนาคตเมื่อสำเร็จการศึกษา</h2>
+        <p class="section-desc">ก้าวสู่การเป็นผู้นำองค์กร เกษตรกรยุคใหม่ และผู้ประกอบการ Agri-Tech ที่ตลาดต้องการตัวสูงสุด</p>
+      </div>
+
+      <div class="careers-grid">
+        <div class="career-card glass-card">
+          <div class="career-icon"><i data-lucide="cpu"></i></div>
+          <h3>Smart Farm System Architect</h3>
+          <p>วิศวกรและผู้ออกแบบระบบสมาร์ตฟาร์ม ผสานอุปกรณ์ IoT คลาวด์ และระบบรดน้ำอัตโนมัติในฟาร์มขนาดใหญ่</p>
+        </div>
+
+        <div class="career-card glass-card">
+          <div class="career-icon"><i data-lucide="brain"></i></div>
+          <h3>Agri-AI & Data Scientist</h3>
+          <p>นักวิเคราะห์ข้อมูลและพัฒนาปัญญาประดิษฐ์ทางการเกษตร เพื่อทำนายผลผลิตและควบคุมคุณภาพพืชเศรษฐกิจ</p>
+        </div>
+
+        <div class="career-card glass-card">
+          <div class="career-icon"><i data-lucide="navigation-2"></i></div>
+          <h3>Precision Drone Specialist</h3>
+          <p>ผู้เชี่ยวชาญการบินและวิเคราะห์ข้อมูลโดรนเพื่อการเกษตรแม่นยำสูงในระดับอุตสาหกรรม</p>
+        </div>
+
+        <div class="career-card glass-card">
+          <div class="career-icon"><i data-lucide="briefcase"></i></div>
+          <h3>Agri-Tech Startup Entrepreneur</h3>
+          <p>ผู้ประกอบการสตาร์ทอัปสร้างนวัตกรรมสินค้าและบริการเทคโนโลยีการเกษตรยุค 4.0</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Call to Action Banner -->
+    <section class="cta-banner-section">
+      <div class="cta-banner-card glass-card text-center">
+        <div class="glow-bg-orb"></div>
+        <h2 class="cta-title">พร้อมก้าวสู่ยุคเกษตรกรรมอัจฉริยะกับ KMITL แล้วหรือยัง?</h2>
+        <p class="cta-desc">ร่วมเป็นส่วนหนึ่งของนวัตกรสมาร์ตฟาร์มรุ่นใหม่ สมัครเรียนรอบนี้พร้อมทุนการศึกษาและอุปกรณ์ IoT Kit ประจำตัว</p>
+        <button class="btn-glow-primary btn-large open-modal-btn">
+          <i data-lucide="sparkles"></i> ลงทะเบียนสมัครเรียนออนไลน์ทันที
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer-section">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <div class="brand-logo">
+          <i data-lucide="sprout" class="sprout-icon"></i>
+          <span class="kmitl-text">KMITL SMART FARM</span>
+        </div>
+        <p>หลักสูตรการจัดการสมาร์ตฟาร์ม คณะเทคโนโลยีการเกษตร สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง</p>
+        <p class="copyright">© 2026 King Mongkut's Institute of Technology Ladkrabang. All Rights Reserved.</p>
+      </div>
+      <div class="footer-contact">
+        <h4><i data-lucide="map-pin"></i> ติดต่อเรา</h4>
+        <p>คณะเทคโนโลยีการเกษตร สจล. เลขที่ 1 ซอยฉลองกรุง 1 แขวงลาดกระบัง เขตลาดกระบัง กรุงเทพฯ 10520</p>
+        <p><i data-lucide="phone"></i> โทรศัพท์: 02-329-8000 ต่อ 7000</p>
+        <p><i data-lucide="mail"></i> อีเมล: agritech@kmitl.ac.th</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Module Detail Drawer / Modal -->
+  <div id="moduleModal" class="modal-backdrop">
+    <div class="modal-content glass-card">
+      <button class="modal-close-btn" id="closeModuleModal">&times;</button>
+      <div class="modal-header">
+        <span class="modal-badge" id="modalModuleNum">MODULE 01</span>
+        <h2 id="modalModuleTitle">Smart IoT & Sensor Microcontrollers</h2>
+      </div>
+      <div class="modal-body">
+        <p id="modalModuleDesc" class="modal-desc-text"></p>
+
+        <div class="modal-detail-block">
+          <h4><i data-lucide="check-circle-2"></i> หัวข้อการเรียนรู้หลัก (Learning Topics):</h4>
+          <ul id="modalTopicsList" class="modal-list"></ul>
+        </div>
+
+        <div class="modal-detail-block">
+          <h4><i data-lucide="wrench"></i> เครื่องมือและฮาร์ดแวร์ที่ใช้ปฏิบัติจริง:</h4>
+          <div id="modalToolsTags" class="modal-tags-wrapper"></div>
+        </div>
+
+        <div class="modal-detail-block">
+          <h4><i data-lucide="award"></i> ผลลัพธ์การเรียนรู้ (Learning Outcomes):</h4>
+          <p id="modalOutcomesText"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cyber-secondary close-modal-action">ปิดหน้าต่าง</button>
+        <button class="btn-glow-primary open-modal-btn">สมัครวิชานี้</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admission & Registration Form Modal -->
+  <div id="admissionModal" class="modal-backdrop">
+    <div class="modal-content glass-card admission-modal-content">
+      <button class="modal-close-btn" id="closeAdmissionModal">&times;</button>
+      
+      <div class="modal-header text-center">
+        <div class="badge-tech"><i data-lucide="sparkles"></i> ADMISSION PORTAL 2026</div>
+        <h2>ลงทะเบียนสนใจ / สมัครเข้าศึกษา</h2>
+        <p>หลักสูตรการจัดการสมาร์ตฟาร์ม (Smart Farm Management KMITL)</p>
+      </div>
+
+      <form id="admissionForm" class="admission-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fullName"><i data-lucide="user"></i> ชื่อ - นามสกุล *</label>
+            <input type="text" id="fullName" required placeholder="เช่น นายสมชาย เกษตรก้าวหน้า" />
+          </div>
+          <div class="form-group">
+            <label for="phoneNum"><i data-lucide="phone"></i> เบอร์โทรศัพท์ติดต่อ *</label>
+            <input type="tel" id="phoneNum" required placeholder="081-234-5678" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="emailAddr"><i data-lucide="mail"></i> อีเมล *</label>
+            <input type="email" id="emailAddr" required placeholder="your.email@example.com" />
+          </div>
+          <div class="form-group">
+            <label for="eduLevel"><i data-lucide="graduation-cap"></i> วุฒิการศึกษาปัจจุบัน *</label>
+            <select id="eduLevel" required>
+              <option value="">-- เลือกวุฒิการศึกษา --</option>
+              <option value="m6">มัธยมศึกษาปีที่ 6 / ปวช.</option>
+              <option value="vocational">ปวส. (สาขาเทคโนโลยี/เกษตร/ช่าง)</option>
+              <option value="bachelor">ปริญญาตรี (ต้องการเทียบโอน/เรียนต่อ)</option>
+              <option value="public">บุคคลทั่วไป / เกษตรกรผู้สนใจ</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="interestArea"><i data-lucide="target"></i> ความสนใจพิเศษในสายสมาร์ตฟาร์ม</label>
+          <select id="interestArea">
+            <option value="iot">ระบบเซนเซอร์และฮาร์ดแวร์ IoT</option>
+            <option value="ai">ปัญญาประดิษฐ์ AI และโดรนการเกษตร</option>
+            <option value="greenhouse">โรงเรือนอัจฉริยะและการปลูกแบบ Hydroponics</option>
+            <option value="business">ธุรกิจเกษตรดิจิทัล Agri-Startup</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="userNotes"><i data-lucide="message-square"></i> ข้อเสนอแนะหรือคำถามเพิ่มเติม</label>
+          <textarea id="userNotes" rows="3" placeholder="ระบุคำถามเพิ่มเติมเกี่ยวกับหลักสูตรหรือทุนการศึกษา..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-glow-primary btn-full">
+            <i data-lucide="send"></i> ยืนยันการส่งข้อมูลสมัครเรียน
+          </button>
+        </div>
+      </form>
+
+      <!-- Success State Screen inside Modal -->
+      <div id="formSuccessScreen" class="form-success-screen hidden text-center">
+        <div class="success-icon-box">
+          <i data-lucide="check-circle-2"></i>
+        </div>
+        <h3>ลงทะเบียนข้อมูลสำเร็จแล้ว!</h3>
+        <p>เจ้าหน้าที่หลักสูตรการจัดการสมาร์ตฟาร์ม KMITL ได้รับข้อมูลของท่านเรียบร้อยแล้ว และจะทำการติดต่อกลับภายใน 24 ชั่วโมง</p>
+        <button id="resetFormBtn" class="btn-cyber-secondary">ตกลง / ปิดหน้าต่าง</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JavaScript Scripts -->
+  <script src="home-canvas.js"></script>
+  <script src="home.js"></script>
+</body>
+</html>
