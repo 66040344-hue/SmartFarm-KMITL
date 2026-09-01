@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบผู้ดูแลระบบ (Admin) - ข้อมูลสายพันธุ์ทุเรียน</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Firebase Web App Modular / Compatibility SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+
+<body>
+
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="main.html" class="brand-logo">
+        <div class="logo-icon">👑</div>
+        <div>
+          <span>Durian Expo Admin</span>
+          <div style="font-size: 0.75rem; color: var(--orange-light); font-weight: normal;">ระบบจัดการข้อมูลทุเรียน
+          </div>
+        </div>
+      </a>
+
+      <ul class="nav-menu">
+        <li><a href="main.html" class="nav-link">หน้ารวมสายพันธุ์</a></li>
+        <li><a href="kanyao.html" class="nav-link">ก้านยาว</a></li>
+        <li><a href="monthong.html" class="nav-link">หมอนทอง</a></li>
+        <li><a href="kradum.html" class="nav-link">กระดุม</a></li>
+        <li><a href="puangmanee.html" class="nav-link">พวงมณี</a></li>
+        <li><a href="kobchainam.html" class="nav-link">กบชายน้ำ</a></li>
+      </ul>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="header-logos">
+          <img src="assets/logo_kmitl.png" alt="KMITL Logo" class="header-logo-img">
+          <img src="assets/logo_agri.png" alt="คณะเทคโนโลยีการเกษตร" class="header-logo-img">
+        </div>
+        <button id="btnLogout" class="btn-admin-top"
+          style="border-color: #ef4444; color: #ef4444; background: transparent;">
+          🚪 ออกจากระบบ
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="modal-box">
+      <div style="font-size: 2.8rem; margin-bottom: 8px;">🔒</div>
+      <h2 style="color: var(--orange-primary); margin-bottom: 6px;">Firebase Admin Login</h2>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px;">
+        กรุณาเข้าสู่ระบบผู้ดูแลเพื่อแก้ไขข้อมูล 5 สายพันธุ์ทุเรียน
+      </p>
+
+      <form id="loginForm">
+        <div class="form-group" style="text-align: left;">
+          <label for="loginEmail">อีเมล (Admin Email)</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="admin@domain.com" required>
+        </div>
+
+        <div class="form-group" style="text-align: left;">
+          <label for="loginPassword">รหัสผ่าน (Password)</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn-submit" style="width: 100%;">
+          เข้าสู่ระบบ Admin
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Main Dashboard Content -->
+  <main id="adminContent" class="container" style="padding: 24px 16px; display: none;">
+
+    <div class="admin-header">
+      <div>
+        <h1 style="color: var(--orange-primary); font-size: 1.6rem;">แผงควบคุมระบบแก้ไขข้อมูลทุเรียน</h1>
+        <p style="color: var(--text-muted); font-size: 0.88rem;">เลือกสายพันธุ์ที่ต้องการแก้ไข
+          ข้อมูลจะอัปเดตไปยังหน้าเว็บทันที</p>
+      </div>
+
+      <button id="btnResetDefaults" class="btn-admin-top"
+        style="border-color: #ef4444; color: #ef4444; background: transparent; width: fit-content;">
+        🔄 รีเซ็ตข้อมูลกลับเป็นค่าเริ่มต้น
+      </button>
+    </div>
+
+    <!-- Variety Selection Tabs -->
+    <div class="admin-tabs">
+      <button class="tab-btn active" data-tab="kanyao">1. ทุเรียนก้านยาว</button>
+      <button class="tab-btn" data-tab="monthong">2. ทุเรียนหมอนทอง</button>
+      <button class="tab-btn" data-tab="kradum">3. ทุเรียนกระดุม</button>
+      <button class="tab-btn" data-tab="puangmanee">4. ทุเรียนพวงมณี</button>
+      <button class="tab-btn" data-tab="kobchainam">5. ทุเรียนกบชายน้ำ</button>
+    </div>
+
+    <!-- Edit Form -->
+    <form id="adminForm" class="content-box">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="editNameTh">ชื่อสายพันธุ์ (ภาษาไทย)</label>
+          <input type="text" id="editNameTh" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editNameEn">ชื่อสายพันธุ์ (ภาษาอังกฤษ / Romanized)</label>
+          <input type="text" id="editNameEn" class="form-control" required>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="editTagline">คำโปรย / จุดเด่นหลัก (Tagline)</label>
+          <input type="text" id="editTagline" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editPriceRange">ช่วงราคาประมาณ (บาท/กก.)</label>
+          <input type="text" id="editPriceRange" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editOrigin">แหล่งปลูกสำคัญ / ต้นกำเนิด</label>
+          <input type="text" id="editOrigin" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editHarvestDays">ระยะเวลาเก็บเกี่ยว (วันหลังดอกบาน)</label>
+          <input type="text" id="editHarvestDays" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editFruitWeight">น้ำหนักผลเฉลี่ย (กก.)</label>
+          <input type="text" id="editFruitWeight" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editFleshColor">สีของพูเนื้อ</label>
+          <input type="text" id="editFleshColor" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editSeedSize">ลักษณะเมล็ด</label>
+          <input type="text" id="editSeedSize" class="form-control" required>
+        </div>
+      </div>
+
+      <!-- Image Source Section -->
+      <div
+        style="background: rgba(11, 14, 20, 0.8); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); padding: 16px; margin: 20px 0;">
+        <h3 style="color: var(--orange-primary); font-size: 1.05rem; margin-bottom: 14px;">🖼️ รูปภาพประจำสายพันธุ์</h3>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editImage">URL รูปภาพ (Image URL / Firebase Storage Link)</label>
+            <input type="text" id="editImage" class="form-control" placeholder="assets/monthong.png หรือ https://...">
+          </div>
+
+          <div class="form-group">
+            <label for="editImageFile">หรืออัปโหลดรูปภาพใหม่จากเครื่อง (Direct Image Upload)</label>
+            <input type="file" id="editImageFile" class="form-control" accept="image/*">
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <label style="font-size: 0.82rem; color: var(--orange-light);">ตัวอย่างรูปภาพปัจจุบัน (Live Preview):</label>
+          <div
+            style="width: 180px; height: 120px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--orange-primary); margin-top: 6px;">
+            <img id="adminImagePreview" src="" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Flavor Sliders -->
+      <h3 style="color: var(--orange-primary); font-size: 1.05rem; margin: 20px 0 14px;">📊 ปรับระดับรสชาติและสัมผัส
+        (คะแนน 1-10)</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ระดับความหวาน: <span id="editSweetnessVal" class="range-value">8/10</span></label>
+          <div class="range-wrap">
+            <input type="range" id="editSweetness" min="1" max="10" step="0.5">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>ระดับความมัน / ครีมมี่: <span id="editCreaminessVal" class="range-value">8/10</span></label>
+          <div class="range-wrap">
+            <input type="range" id="editCreaminess" min="1" max="10" step="0.5">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>ระดับความหอมกลิ่นทุเรียน: <span id="editAromaVal" class="range-value">8/10</span></label>
+          <div class="range-wrap">
+            <input type="range" id="editAroma" min="1" max="10" step="0.5">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>ระดับความหนาเนื้อ: <span id="editFleshThicknessVal" class="range-value">8/10</span></label>
+          <div class="range-wrap">
+            <input type="range" id="editFleshThickness" min="1" max="10" step="0.5">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="editDescription">รายละเอียดเชิงลึก (Description)</label>
+        <textarea id="editDescription" class="form-control" required></textarea>
+      </div>
+
+      <div class="form-group full-width">
+        <label for="editCharacteristics">คุณลักษณะเด่น (ใส่ 1 ข้อต่อ 1 บรรทัด)</label>
+        <textarea id="editCharacteristics" class="form-control"
+          placeholder="ก้านยาวแข็งแรง&#10;เนื้อเนียนครีมมี่&#10;กลิ่นหอมละมุน"></textarea>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="editSelectionTips">วิธีการเลือกและสังเกตสุกกำลังดี</label>
+          <textarea id="editSelectionTips" class="form-control"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="editRecommendedFor">เหมาะสำหรับใคร / คำแนะนำผู้บริโภค</label>
+          <textarea id="editRecommendedFor" class="form-control"></textarea>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 24px;">
+        <button type="submit" class="btn-submit" style="font-size: 1rem; height: 50px;">
+          💾 บันทึกการเปลี่ยนแปลง (Save Changes)
+        </button>
+      </div>
+
+    </form>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <ul class="footer-links">
+        <li><a href="main.html">หน้ารวมสายพันธุ์</a></li>
+        <li><a href="kanyao.html">ก้านยาว</a></li>
+        <li><a href="monthong.html">หมอนทอง</a></li>
+        <li><a href="kradum.html">กระดุม</a></li>
+        <li><a href="puangmanee.html">พวงมณี</a></li>
+        <li><a href="kobchainam.html">กบชายน้ำ</a></li>
+        <li><a href="Admindurian.html">ระบบ Admin</a></li>
+      </ul>
+      <p>© 2026 Durian Exhibition Project — คณะเทคโนโลยีการเกษตร KMITL</p>
+    </div>
+  </footer>
+
+  <!-- Mobile Bottom Sticky Navigation Bar -->
+  <nav class="mobile-bottom-bar">
+    <a href="main.html" class="bottom-tab">
+      <span class="tab-icon">🏠</span>
+      <span>รวมพันธุ์</span>
+    </a>
+    <a href="kanyao.html" class="bottom-tab">
+      <span class="tab-icon">🌿</span>
+      <span>ก้านยาว</span>
+    </a>
+    <a href="monthong.html" class="bottom-tab">
+      <span class="tab-icon">🟡</span>
+      <span>หมอนทอง</span>
+    </a>
+    <a href="kradum.html" class="bottom-tab">
+      <span class="tab-icon">🔘</span>
+      <span>กระดุม</span>
+    </a>
+    <a href="puangmanee.html" class="bottom-tab">
+      <span class="tab-icon">🍊</span>
+      <span>พวงมณี</span>
+    </a>
+    <a href="kobchainam.html" class="bottom-tab">
+      <span class="tab-icon">💎</span>
+      <span>กบชายน้ำ</span>
+    </a>
+    <a href="Admindurian.html" class="bottom-tab active">
+      <span class="tab-icon">⚙️</span>
+      <span>Admin</span>
+    </a>
+  </nav>
+
+  <script src="firebase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>

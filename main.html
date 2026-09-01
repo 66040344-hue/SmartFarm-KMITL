@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สุดยอด 5 สายพันธุ์ทุเรียนไทย | อาณาจักรราชาแห่งผลไม้</title>
+  <meta name="description" content="รวบรวมข้อมูล 5 สุดยอดสายพันธุ์ทุเรียนไทยยอดนิยม ก้านยาว หมอนทอง กระดุม พวงมณี และกบชายน้ำ พร้อมรายละเอียดรสชาติ รูปร่าง และคำแนะนำการเลือกซื้อ">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="main.html" class="brand-logo">
+        <div class="logo-icon">👑</div>
+        <div>
+          <span>King of Durian</span>
+          <div style="font-size: 0.75rem; color: var(--orange-light); font-weight: normal;">สารานุกรม 5 สายพันธุ์ทุเรียนไทย</div>
+        </div>
+      </a>
+
+      <ul class="nav-menu">
+        <li><a href="main.html" class="nav-link active">🏠 หน้ารวมสายพันธุ์</a></li>
+        <li><a href="kanyao.html" class="nav-link">ก้านยาว</a></li>
+        <li><a href="monthong.html" class="nav-link">หมอนทอง</a></li>
+        <li><a href="kradum.html" class="nav-link">กระดุม</a></li>
+        <li><a href="puangmanee.html" class="nav-link">พวงมณี</a></li>
+        <li><a href="kobchainam.html" class="nav-link">กบชายน้ำ</a></li>
+      </ul>
+
+      <div class="header-logos">
+        <img src="assets/logo_kmitl.png" alt="KMITL Logo" class="header-logo-img">
+        <img src="assets/logo_agri.png" alt="คณะเทคโนโลยีการเกษตร" class="header-logo-img">
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="hero-section">
+    <div class="container">
+      <span class="hero-badge">✨ THAI DURIAN EXPO EXHIBITION</span>
+      <h1 class="hero-title">สารานุกรม <span class="gradient-orange">5 สุดยอดสายพันธุ์ทุเรียนไทย</span></h1>
+      <p class="hero-subtitle">
+        เจาะลึกเอกลักษณ์ ความหวาน ความมัน กลิ่นหอม และคุณลักษณะเฉพาะตัวของทุเรียนไทย 5 สายพันธุ์ระดับตำนาน
+      </p>
+
+      <!-- Search & Filter Controls -->
+      <div class="search-filter-box">
+        <div class="search-input-group">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="durianSearchInput" placeholder="ค้นหาชื่อสายพันธุ์, รสชาติ, หรือจุดเด่น (เช่น ก้านยาว, หวานจัด, ครีมมี่)...">
+        </div>
+
+        <div class="filter-pills-scroll">
+          <button class="filter-btn active" data-filter="all">ทั้งหมด (5 พันธุ์)</button>
+          <button class="filter-btn" data-filter="popular">🔥 พันธุ์ยอดนิยม</button>
+          <button class="filter-btn" data-filter="sweet">🍯 หวานจัด (9+)</button>
+          <button class="filter-btn" data-filter="cream">🧈 เนื้อครีมมี่มันเข้ม</button>
+          <button class="filter-btn" data-filter="rare">💎 หายาก / พรีเมียม</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Durian Variety Cards Grid (Dynamic JS) -->
+  <main class="container">
+    <div id="durianGrid" class="durian-grid">
+      <!-- Dynamically populated via script.js -->
+    </div>
+
+    <!-- Comparison Table Section -->
+    <section style="margin-top: 30px;">
+      <h2 class="section-title">📊 ตารางเปรียบเทียบคุณลักษณะ 5 สายพันธุ์</h2>
+      <div class="table-responsive">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>สายพันธุ์</th>
+              <th>ความหวาน</th>
+              <th>ความมัน</th>
+              <th>สีของพูเนื้อ</th>
+              <th>ระยะเก็บเกี่ยว</th>
+              <th>ราคาประมาณ</th>
+              <th>การกระทำ</th>
+            </tr>
+          </thead>
+          <tbody id="comparisonTableBody">
+            <!-- Dynamically populated via script.js -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <ul class="footer-links">
+        <li><a href="main.html">หน้ารวมสายพันธุ์</a></li>
+        <li><a href="kanyao.html">ทุเรียนก้านยาว</a></li>
+        <li><a href="monthong.html">ทุเรียนหมอนทอง</a></li>
+        <li><a href="kradum.html">ทุเรียนกระดุม</a></li>
+        <li><a href="puangmanee.html">ทุเรียนพวงมณี</a></li>
+        <li><a href="kobchainam.html">ทุเรียนกบชายน้ำ</a></li>
+        <li><a href="Admindurian.html">ระบบ Admin</a></li>
+      </ul>
+      <p>© 2026 Durian Exhibition Project — คณะเทคโนโลยีการเกษตร KMITL</p>
+    </div>
+  </footer>
+
+  <!-- Mobile Bottom Sticky Navigation Bar -->
+  <nav class="mobile-bottom-bar">
+    <a href="main.html" class="bottom-tab active">
+      <span class="tab-icon">🏠</span>
+      <span>รวมพันธุ์</span>
+    </a>
+    <a href="kanyao.html" class="bottom-tab">
+      <span class="tab-icon">🌿</span>
+      <span>ก้านยาว</span>
+    </a>
+    <a href="monthong.html" class="bottom-tab">
+      <span class="tab-icon">🟡</span>
+      <span>หมอนทอง</span>
+    </a>
+    <a href="kradum.html" class="bottom-tab">
+      <span class="tab-icon">🔘</span>
+      <span>กระดุม</span>
+    </a>
+    <a href="puangmanee.html" class="bottom-tab">
+      <span class="tab-icon">🍊</span>
+      <span>พวงมณี</span>
+    </a>
+    <a href="kobchainam.html" class="bottom-tab">
+      <span class="tab-icon">💎</span>
+      <span>กบชายน้ำ</span>
+    </a>
+    <a href="Admindurian.html" class="bottom-tab">
+      <span class="tab-icon">⚙️</span>
+      <span>Admin</span>
+    </a>
+  </nav>
+
+  <script src="firebase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
