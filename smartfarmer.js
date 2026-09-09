@@ -167,6 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: { duration: 300 },
                     plugins: {
                         legend: { display: true, position: 'top', labels: { font: { family: 'Prompt', size: 10 }, color: textColor } },
                         tooltip: { mode: 'index', intersect: false }
@@ -233,6 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: { duration: 300 },
                     plugins: {
                         legend: { display: true, position: 'top', labels: { font: { family: 'Prompt', size: 10 }, color: textColor } },
                         tooltip: { mode: 'index', intersect: false }
