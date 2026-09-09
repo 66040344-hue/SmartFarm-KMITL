@@ -67,6 +67,37 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // --- Navigation Tab Switcher ---
+    const navTabBtns = document.querySelectorAll(".nav-tab-btn");
+    const dashboardPages = document.querySelectorAll(".dashboard-page");
+
+    navTabBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetPageId = btn.getAttribute("data-tab");
+
+            // Switch active tab button
+            navTabBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            // Switch active page view
+            dashboardPages.forEach(page => {
+                if (page.id === targetPageId) {
+                    page.classList.add("active");
+                } else {
+                    page.classList.remove("active");
+                }
+            });
+
+            // If switching to Telemetry tab, resize Chart.js to recalculate dimensions properly
+            if (targetPageId === "page-telemetry") {
+                setTimeout(() => {
+                    if (soilChart) soilChart.resize();
+                    if (airChart) airChart.resize();
+                }, 50);
+            }
+        });
+    });
+
     // --- DOM Elements ---
     // Soil Moisture
     const soilMoistureVal = document.getElementById("val-soil-moisture");
@@ -326,7 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (snapshot.exists()) {
                 lastHeartbeatTime = Date.now();
                 const hbValue = snapshot.val();
-                
+
                 let hbFormatted = formatActualTimestamp(hbValue);
                 if (hbFormatted) {
                     lastValidTimestampFormatted = hbFormatted;
@@ -414,10 +445,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } else {
             cloudStatusDot.className = "status-dot-pulse disconnected";
-            cloudStatusText.innerText = "ไม่พบเซนเซอร์";
+            cloudStatusText.innerText = "OFFLINE";
             cloudStatusText.style.color = "var(--red)";
             if (summaryDeviceStatus) {
-                summaryDeviceStatus.innerText = "ขาดการติดต่อ";
+                summaryDeviceStatus.innerText = "ไม่พบอุปกรณ์";
                 summaryDeviceStatus.style.color = "var(--red)";
             }
         }
@@ -783,4 +814,240 @@ document.addEventListener("DOMContentLoaded", () => {
             renderHistoryCharts();
         });
     });
+
+    // ==========================================
+    // Weather Forecast & Dynamic Area Selector Module
+    // Open-Meteo API Integration + 5 Location Shortcuts
+    // ==========================================
+    const forecastSearchForm = document.getElementById("forecast-search-form");
+    const forecastSearchInput = document.getElementById("forecast-search-input");
+    const btnGpsLocation = document.getElementById("btn-gps-location");
+    const locationChips = document.querySelectorAll(".location-chip");
+
+    const forecastLocationName = document.getElementById("forecast-location-name");
+    const forecastUpdateTime = document.getElementById("forecast-update-time");
+    const forecastIcon = document.getElementById("forecast-icon");
+    const forecastTemp = document.getElementById("forecast-temp");
+    const forecastCondition = document.getElementById("forecast-condition");
+    const forecastRainChance = document.getElementById("forecast-rain-chance");
+    const forecastWindSpeed = document.getElementById("forecast-wind-speed");
+    const forecastHumidity = document.getElementById("forecast-humidity");
+
+    const agriAdvisoryText = document.getElementById("agri-advisory-text");
+    const hourlyForecastSlider = document.getElementById("hourly-forecast-slider");
+    const dailyForecastGrid = document.getElementById("daily-forecast-grid");
+
+    // Weather Code Interpretation Map (WMO Code)
+    function getWeatherInfo(code) {
+        switch (code) {
+            case 0: return { icon: "☀️", text: "ท้องฟ้าแจ่มใส" };
+            case 1:
+            case 2: return { icon: "⛅", text: "มีเมฆบางส่วน" };
+            case 3: return { icon: "☁️", text: "เมฆครึ้ม" };
+            case 45:
+            case 48: return { icon: "🌫️", text: "มีหมอก" };
+            case 51:
+            case 53:
+            case 55: return { icon: "🌧️", text: "ฝนตกเล็กน้อย" };
+            case 61:
+            case 63:
+            case 65: return { icon: "🌧️", text: "ฝนตกปานกลาง-หนัก" };
+            case 80:
+            case 81:
+            case 82: return { icon: "⛈️", text: "ฝนฟ้าคะนอง" };
+            case 95:
+            case 96:
+            case 99: return { icon: "🌩️", text: "พายุฝนฟ้าคะนอง" };
+            default: return { icon: "🌤️", text: "สภาพอากาศปกติ" };
+        }
+    }
+
+    // Default Initial Load: ลาดกระบัง
+    loadAreaWeather(13.7223, 100.7831, "ลาดกระบัง");
+
+    // Event Listeners for 5 Location Shortcut Chips
+    locationChips.forEach(chip => {
+        chip.addEventListener("click", () => {
+            locationChips.forEach(c => c.classList.remove("active"));
+            chip.classList.add("active");
+
+            const lat = Number(chip.getAttribute("data-lat"));
+            const lon = Number(chip.getAttribute("data-lon"));
+            const name = chip.getAttribute("data-name");
+            loadAreaWeather(lat, lon, name);
+        });
+    });
+
+    // GPS Location Handler
+    if (btnGpsLocation) {
+        btnGpsLocation.addEventListener("click", () => {
+            if ("geolocation" in navigator) {
+                btnGpsLocation.querySelector("span").innerText = "กำลังค้นหา GPS...";
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        btnGpsLocation.querySelector("span").innerText = "ตำแหน่งปัจจุบัน";
+                        const lat = pos.coords.latitude;
+                        const lon = pos.coords.longitude;
+                        locationChips.forEach(c => c.classList.remove("active"));
+                        loadAreaWeather(lat, lon, `ตำแหน่งของคุณ (${lat.toFixed(2)}, ${lon.toFixed(2)})`);
+                    },
+                    (err) => {
+                        btnGpsLocation.querySelector("span").innerText = "ตำแหน่งปัจจุบัน";
+                        alert("ไม่สามารถเข้าถึง GPS ได้ โปรดอนุญาตสิทธิ์ตำแหน่งในเบราว์เซอร์");
+                    }
+                );
+            } else {
+                alert("เบราว์เซอร์นี้ไม่รองรับระบบ GPS");
+            }
+        });
+    }
+
+    // Search Form Handler via Open-Meteo Geocoding API
+    if (forecastSearchForm) {
+        forecastSearchForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const query = forecastSearchInput.value.trim();
+            if (!query) return;
+
+            try {
+                if (forecastLocationName) forecastLocationName.innerText = `กำลังค้นหา "${query}"...`;
+                const searchUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=th&format=json`;
+                const res = await fetch(searchUrl);
+                const data = await res.json();
+
+                if (data.results && data.results.length > 0) {
+                    const result = data.results[0];
+                    const name = result.name + (result.admin1 ? ` (${result.admin1})` : '');
+                    locationChips.forEach(c => c.classList.remove("active"));
+                    loadAreaWeather(result.latitude, result.longitude, name);
+                } else {
+                    alert(`ไม่พบข้อมูลพื้นที่ "${query}" โปรดลองระบุชื่อจังหวัดหรืออำเภอ`);
+                }
+            } catch (err) {
+                console.error("Geocoding Error:", err);
+                alert("เกิดข้อผิดพลาดในการค้นหาพื้นที่");
+            }
+        });
+    }
+
+    // Main Open-Meteo Weather Fetcher
+    async function loadAreaWeather(lat, lon, areaName) {
+        try {
+            if (forecastLocationName) forecastLocationName.innerText = areaName;
+            if (forecastCondition) forecastCondition.innerText = "กำลังดึงข้อมูลพยากรณ์สด...";
+
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FBangkok`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!data || !data.current) return;
+
+            // 1. Current Weather
+            const current = data.current;
+            const weatherInfo = getWeatherInfo(current.weather_code);
+
+            if (forecastIcon) forecastIcon.innerText = weatherInfo.icon;
+            if (forecastTemp) forecastTemp.innerText = current.temperature_2m.toFixed(1);
+            if (forecastCondition) forecastCondition.innerText = weatherInfo.text;
+            if (forecastWindSpeed) forecastWindSpeed.innerText = `${current.wind_speed_10m.toFixed(1)} km/h`;
+            if (forecastHumidity) forecastHumidity.innerText = `${current.relative_humidity_2m}%`;
+
+            const maxRainChanceToday = (data.daily && data.daily.precipitation_probability_max && data.daily.precipitation_probability_max[0]) !== undefined
+                ? data.daily.precipitation_probability_max[0]
+                : 0;
+            if (forecastRainChance) forecastRainChance.innerText = `${maxRainChanceToday}%`;
+
+            const now = new Date();
+            if (forecastUpdateTime) forecastUpdateTime.innerText = `อัปเดตสด ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} น.`;
+
+            // 2. Render 24-Hour Timeline
+            renderHourlyTimeline(data.hourly);
+
+            // 3. Render 7-Day Forecast Grid
+            render7DayGrid(data.daily);
+
+            // 4. Update Agricultural Irrigation Advisory
+            updateAgriculturalAdvisory(data.daily);
+
+        } catch (err) {
+            console.error("Open-Meteo Fetch Error:", err);
+            if (forecastCondition) forecastCondition.innerText = "ไม่สามารถเชื่อมต่อพยากรณ์อากาศได้";
+        }
+    }
+
+    function renderHourlyTimeline(hourlyData) {
+        if (!hourlyForecastSlider || !hourlyData || !hourlyData.time) return;
+        hourlyForecastSlider.innerHTML = "";
+
+        const currentHourIndex = new Date().getHours();
+        const next24 = hourlyData.time.slice(currentHourIndex, currentHourIndex + 24);
+
+        next24.forEach((timeStr, i) => {
+            const idx = currentHourIndex + i;
+            const temp = hourlyData.temperature_2m[idx];
+            const rainProb = hourlyData.precipitation_probability[idx];
+            const wCode = hourlyData.weather_code[idx];
+            const wInfo = getWeatherInfo(wCode);
+
+            const hourLabel = timeStr.split("T")[1].slice(0, 5);
+
+            const card = document.createElement("div");
+            card.className = "hourly-card";
+            card.innerHTML = `
+                <span class="h-time">${hourLabel}</span>
+                <span class="h-icon">${wInfo.icon}</span>
+                <span class="h-temp">${temp.toFixed(0)}°</span>
+                <span class="h-rain">💧${rainProb}%</span>
+            `;
+            hourlyForecastSlider.appendChild(card);
+        });
+    }
+
+    function render7DayGrid(dailyData) {
+        if (!dailyForecastGrid || !dailyData || !dailyData.time) return;
+        dailyForecastGrid.innerHTML = "";
+
+        const dayNames = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
+
+        dailyData.time.forEach((dateStr, i) => {
+            const d = new Date(dateStr);
+            const dayName = i === 0 ? "วันนี้" : dayNames[d.getDay()];
+            const wCode = dailyData.weather_code[i];
+            const wInfo = getWeatherInfo(wCode);
+            const maxTemp = dailyData.temperature_2m_max[i].toFixed(0);
+            const minTemp = dailyData.temperature_2m_min[i].toFixed(0);
+            const rainProb = dailyData.precipitation_probability_max[i] || 0;
+            const rainSum = dailyData.precipitation_sum[i] || 0;
+
+            const card = document.createElement("div");
+            card.className = "daily-card";
+            card.innerHTML = `
+                <span class="d-day">${dayName}</span>
+                <span class="d-icon">${wInfo.icon}</span>
+                <div class="d-temp-range">
+                    <span class="max-temp">${maxTemp}°</span>
+                    <span class="min-temp">${minTemp}°</span>
+                </div>
+                <span class="d-rain">💧${rainProb}% (${rainSum.toFixed(1)}mm)</span>
+            `;
+            dailyForecastGrid.appendChild(card);
+        });
+    }
+
+    function updateAgriculturalAdvisory(dailyData) {
+        if (!agriAdvisoryText || !dailyData || !dailyData.precipitation_sum) return;
+
+        const rainToday = dailyData.precipitation_sum[0] || 0;
+        const totalRain3Days = (dailyData.precipitation_sum.slice(0, 3).reduce((a, b) => a + b, 0));
+        const maxProb3Days = Math.max(...(dailyData.precipitation_probability_max ? dailyData.precipitation_probability_max.slice(0, 3) : [0]));
+
+        if (totalRain3Days > 15 || maxProb3Days > 70) {
+            agriAdvisoryText.innerHTML = `ในพื้นที่คาดว่าจะมีฝนตกสะสมประมาณ <strong>${totalRain3Days.toFixed(1)} mm (โอกาสฝนสูง ${maxProb3Days}%)</strong> <span style="color:var(--amber);">ควรลดหรือชะลอการให้น้ำระบบอัตโนมัติ</span> เพื่อป้องกันรากพืชสำลักน้ำและลดการเกิดเชื้อรา`;
+        } else if (totalRain3Days > 5) {
+            agriAdvisoryText.innerHTML = `ในพื้นที่มีโอกาสฝนตกเล็กน้อย <strong>(${totalRain3Days.toFixed(1)} mm)</strong> แนะนำให้รดน้ำตามปกติแต่สังเกตความชื้นในดินล่วงหน้า`;
+        } else {
+            agriAdvisoryText.innerHTML = `ในพื้นที่สภาพอากาศแห้ง มีฝนน้อย <strong>(โอกาสฝนเพียง ${maxProb3Days}%)</strong> ควรคงระบบรดน้ำอัตโนมัติหรือเพิ่มรอบการให้น้ำช่วงแดดจัด`;
+        }
+    }
 });
