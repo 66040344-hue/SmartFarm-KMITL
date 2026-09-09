@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFarmer Dashboard - ระบบเฝ้าระวังและวิเคราะห์สภาพแวดล้อมฟาร์ม</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Custom Weather Glass CSS -->
+    <link rel="stylesheet" href="smartfarmer.css">
+</head>
+
+<body>
+    <!-- Bright Sky & Nature Atmospheric Backdrop Overlay -->
+    <div class="weather-bg-overlay"></div>
+    <div class="ambient-glow orb-1"></div>
+    <div class="ambient-glow orb-2"></div>
+    <div class="ambient-glow orb-3"></div>
+
+    <div class="dashboard-container">
+        <!-- Single Unified Weather Glass Header Container (Includes Date & Time) -->
+        <header class="top-header">
+            <!-- Header Top Row: Brand Info & Status Controls -->
+            <div class="header-top-row">
+                <div class="brand-section">
+                    <div class="brand-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <div class="brand-text">
+                        <h1>SmartFarmer</h1>
+                        <p>ติดตามสภาพแวดล้อมฟาร์ม</p>
+                    </div>
+                </div>
+
+                <div class="header-status-group">
+                    <div class="cloud-pill">
+                        <span id="cloud-status-dot" class="status-dot-pulse connected"></span>
+                        <span id="cloud-status-text">Online</span>
+                    </div>
+
+                    <div class="action-btns">
+                        <!-- Fullscreen View Toggle -->
+                        <button id="btn-fullscreen" class="icon-btn" title="ขยายเต็มจอ">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                            </svg>
+                        </button>
+                        <!-- Theme Toggle -->
+                        <button id="btn-theme-toggle" class="icon-btn" title="สลับธีม">
+                            <svg id="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                            </svg>
+                            <svg id="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Soft Glass Divider Line -->
+            <div class="header-divider"></div>
+
+            <!-- Integrated Time Row Inside Header Card -->
+            <div class="header-time-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span class="time-label">เวลาข้อมูลล่าสุด:</span>
+                <span class="time-val" id="last-data-timestamp">กำลังโหลดข้อมูล...</span>
+            </div>
+        </header>
+
+        <!-- Prominent High-Contrast Key Metric Highlight Cards -->
+        <div class="hero-highlights-grid">
+            <!-- VPD Highlight Card -->
+            <div class="highlight-card vpd-card">
+                <div class="highlight-icon vpd-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <div class="highlight-info">
+                    <span class="highlight-label">แรงดันไอน้ำ (VPD)</span>
+                    <span class="highlight-value" id="hero-vpd-val">-- kPa</span>
+                </div>
+            </div>
+
+            <!-- Health Score Highlight Card (Strict Bounds - No Overflow) -->
+            <div class="highlight-card health-card">
+                <div class="highlight-icon health-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <div class="highlight-info">
+                    <span class="highlight-label">ความสมบูรณ์สภาพแวดล้อม</span>
+                    <span class="highlight-value" id="hero-health-score">--%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weather App Style 2x2 Telemetry Grid (Tiles with Circular Dot Indicator Thumb) -->
+        <section class="telemetry-grid">
+            <!-- Tile 1: Soil Moisture (ความชื้นในดิน) -->
+            <div class="weather-tile soil-moisture">
+                <div class="tile-header">
+                    <div class="tile-label-group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                        </svg>
+                        <span>ความชื้นในดิน</span>
+                    </div>
+                </div>
+                <div class="tile-body">
+                    <div class="tile-number-row">
+                        <span class="tile-big-number" id="val-soil-moisture">--</span>
+                        <span class="tile-unit">%</span>
+                    </div>
+                </div>
+                <div class="tile-footer">
+                    <!-- Dynamic Multi-Color Track + White Circular Thumb Dot Indicator -->
+                    <div class="weather-meter-track">
+                        <div class="meter-bar-fill soil-moisture-fill" id="bar-soil-moisture" style="width: 0%;"></div>
+                        <div class="meter-thumb-dot" id="thumb-soil-moisture" style="left: 0%;"></div>
+                    </div>
+                    <div class="tile-subtext">
+                        <span class="telemetry-status-badge badge-gray" id="status-soil-moisture">รอข้อมูล...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tile 2: Soil Temperature (อุณหภูมิดิน) -->
+            <div class="weather-tile soil-temp">
+                <div class="tile-header">
+                    <div class="tile-label-group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                        </svg>
+                        <span>อุณหภูมิดิน</span>
+                    </div>
+                </div>
+                <div class="tile-body">
+                    <div class="tile-number-row">
+                        <span class="tile-big-number" id="val-soil-temp">--</span>
+                        <span class="tile-unit">°C</span>
+                    </div>
+                </div>
+                <div class="tile-footer">
+                    <!-- Dynamic Multi-Color Track + White Circular Thumb Dot Indicator -->
+                    <div class="weather-meter-track">
+                        <div class="meter-bar-fill soil-temp-fill" id="bar-soil-temp" style="width: 0%;"></div>
+                        <div class="meter-thumb-dot" id="thumb-soil-temp" style="left: 0%;"></div>
+                    </div>
+                    <div class="tile-subtext">
+                        <span class="telemetry-status-badge badge-gray" id="status-soil-temp">รอข้อมูล...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tile 3: Air Humidity (ความชื้นอากาศ) -->
+            <div class="weather-tile air-humidity">
+                <div class="tile-header">
+                    <div class="tile-label-group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                        </svg>
+                        <span>ความชื้นอากาศ</span>
+                    </div>
+                </div>
+                <div class="tile-body">
+                    <div class="tile-number-row">
+                        <span class="tile-big-number" id="val-air-humidity">--</span>
+                        <span class="tile-unit">%RH</span>
+                    </div>
+                </div>
+                <div class="tile-footer">
+                    <!-- Dynamic Multi-Color Track + White Circular Thumb Dot Indicator -->
+                    <div class="weather-meter-track">
+                        <div class="meter-bar-fill air-humidity-fill" id="bar-air-humidity" style="width: 0%;"></div>
+                        <div class="meter-thumb-dot" id="thumb-air-humidity" style="left: 0%;"></div>
+                    </div>
+                    <div class="tile-subtext">
+                        <span class="telemetry-status-badge badge-gray" id="status-air-humidity">รอข้อมูล...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tile 4: Air Temperature (อุณหภูมิอากาศ) -->
+            <div class="weather-tile air-temp">
+                <div class="tile-header">
+                    <div class="tile-label-group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                        </svg>
+                        <span>อุณหภูมิอากาศ</span>
+                    </div>
+                </div>
+                <div class="tile-body">
+                    <div class="tile-number-row">
+                        <span class="tile-big-number" id="val-air-temp">--</span>
+                        <span class="tile-unit">°C</span>
+                    </div>
+                </div>
+                <div class="tile-footer">
+                    <!-- Dynamic Multi-Color Track + White Circular Thumb Dot Indicator -->
+                    <div class="weather-meter-track">
+                        <div class="meter-bar-fill air-temp-fill" id="bar-air-temp" style="width: 0%;"></div>
+                        <div class="meter-thumb-dot" id="thumb-air-temp" style="left: 0%;"></div>
+                    </div>
+                    <div class="tile-subtext">
+                        <span class="telemetry-status-badge badge-gray" id="status-air-temp">รอข้อมูล...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Weather Telemetry Dual-Axis Charts Section -->
+        <section class="charts-grid">
+            <!-- Soil Environment Chart -->
+            <div class="chart-card-box">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <div class="chart-title-icon soil-icon-bg">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3>แนวโน้มสภาพแวดล้อมในดิน</h3>
+                            <p>ความชื้นดิน (%) & อุณหภูมิดิน (°C)</p>
+                        </div>
+                    </div>
+                    <div class="time-filter-buttons">
+                        <button class="filter-btn active" data-range="1h">1 ชม.</button>
+                        <button class="filter-btn" data-range="6h">6 ชม.</button>
+                        <button class="filter-btn" data-range="24h">24 ชม.</button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chart-soil-telemetry"></canvas>
+                </div>
+            </div>
+
+            <!-- Air Environment Chart -->
+            <div class="chart-card-box">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <div class="chart-title-icon air-icon-bg">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3>แนวโน้มสภาพแวดล้อมในอากาศ</h3>
+                            <p>ความชื้นอากาศ (%RH) & อุณหภูมิอากาศ (°C)</p>
+                        </div>
+                    </div>
+                    <div class="time-filter-buttons">
+                        <button class="filter-btn active" data-range="1h">1 ชม.</button>
+                        <button class="filter-btn" data-range="6h">6 ชม.</button>
+                        <button class="filter-btn" data-range="24h">24 ชม.</button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chart-air-telemetry"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Crop Environmental Diagnostics & Summary Grid -->
+        <section class="diagnostics-grid">
+            <!-- Environmental Health Insights Card -->
+            <div class="diagnostics-card">
+                <div class="diagnostics-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                    <h3>วิเคราะห์สภาพแวดล้อมพืช</h3>
+                </div>
+
+                <div class="crop-insights-list">
+                    <div class="insight-item">
+                        <div class="insight-icon soil-icon-bg">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                            </svg>
+                        </div>
+                        <div class="insight-content">
+                            <h4>สภาวะน้ำและความชื้นในดิน</h4>
+                            <p id="insight-moisture-text">กำลังโหลดข้อมูลเซนเซอร์ในดิน...</p>
+                        </div>
+                    </div>
+
+                    <div class="insight-item">
+                        <div class="insight-icon temp-icon-bg">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                            </svg>
+                        </div>
+                        <div class="insight-content">
+                            <h4>อุณหภูมิรากและอากาศ</h4>
+                            <p id="insight-temp-text">กำลังโหลดข้อมูลอุณหภูมิ...</p>
+                        </div>
+                    </div>
+
+                    <div class="insight-item">
+                        <div class="insight-icon vpd-icon-bg">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <div class="insight-content">
+                            <h4>แรงดันไอน้ำ (VPD)</h4>
+                            <p id="insight-vpd-text">กำลังคำนวณอัตราคายน้ำพืช...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Telemetry Summary Table Card -->
+            <div class="summary-table-card">
+                <h3>สรุปค่าประจำวัน</h3>
+                <div class="summary-rows">
+                    <div class="summary-row">
+                        <span class="summary-label">อัปเดตล่าสุด:</span>
+                        <span class="summary-val" id="last-update-ts">--:--:--</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">ความชื้นดิน เฉลี่ย:</span>
+                        <span class="summary-val" id="summary-avg-soil-moisture">--%</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">อุณหภูมิดิน เฉลี่ย:</span>
+                        <span class="summary-val" id="summary-avg-soil-temp">--°C</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">ความชื้นอากาศ เฉลี่ย:</span>
+                        <span class="summary-val" id="summary-avg-air-humidity">--%</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">อุณหภูมิอากาศ Max/Min:</span>
+                        <span class="summary-val" id="summary-temp-minmax">-- / --°C</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">สถานะอุปกรณ์ IoT:</span>
+                        <span class="summary-val" id="summary-device-status" style="color: var(--green);">กำลังเชื่อมต่อ...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Footer -->
+        <footer class="dashboard-footer">
+            <p>SmartFarmer IoT Telemetry Platform</p>
+        </footer>
+    </div>
+
+    <!-- Main Dashboard Script (Module) -->
+    <script type="module" src="smartfarmer.js"></script>
+</body>
+
+</html>
