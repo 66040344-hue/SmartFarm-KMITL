@@ -1,4 +1,8 @@
 // seminar-firebase-config.js
+// Firebase Config สำหรับเชื่อมต่อฐานข้อมูล Cloud
+// หมายเหตุ: Firebase Web API Key ออกแบบมาให้เผยแพร่ในฝั่ง Client (เบราว์เซอร์) ได้ตามปกติ
+// การป้องกันความปลอดภัยของข้อมูลใช้การตั้งค่า Firestore Rules และ Firebase Auth
+
 export const firebaseConfig = {
     apiKey: "AIzaSyDL96VzXmFYxDuXvJgYW85HjCw5ua63b-Q",
     authDomain: "smartfarmkmitl-df9e0.firebaseapp.com",

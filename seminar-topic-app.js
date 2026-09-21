@@ -1,14 +1,14 @@
 // seminar-topic-app.js - Firebase & LocalStorage Seminar Work Management Script
 import { firebaseConfig, isFirebaseConfigured } from './seminar-firebase-config.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { 
-    getFirestore, 
-    collection, 
-    doc, 
-    getDoc, 
-    getDocs, 
-    setDoc, 
-    updateDoc, 
+import {
+    getFirestore,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    setDoc,
+    updateDoc,
     arrayUnion,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -21,42 +21,6 @@ import {
 
 // Initial Initial Seed Data from image + additional mock data
 const INITIAL_STUDENTS = [
-    {
-        id: "65040425",
-        studentId: "65040425",
-        name: "นายศักย์พิสิฐ ชิณสีห์",
-        topic: "นวัตกรรมประเมินและคัดแยกคุณภาพมะเขือยาว",
-        advisor: "ดร.ศิรเมศร์ วีระสกุลวัฒน์",
-        status: "pending", // pending, confirmed, updated
-        updatedAt: new Date().toISOString(),
-        history: [
-            { timestamp: new Date().toISOString(), action: "นำเข้าข้อมูลเริ่มต้นในระบบ" }
-        ]
-    },
-    {
-        id: "66040018",
-        studentId: "66040018",
-        name: "นายกสิญธร พรหมยาน",
-        topic: "การประยุกต์ใช้เทคโนโลยี Computer Vision ในการตรวนับจำนวนจิ้งหรีดอัตโนมัติสำหรับฟาร์มอัจฉริยะ",
-        advisor: "รศ.น.สพ.ดร.จำลอง มิตรชาวไทย",
-        status: "pending",
-        updatedAt: new Date().toISOString(),
-        history: [
-            { timestamp: new Date().toISOString(), action: "นำเข้าข้อมูลเริ่มต้นในระบบ" }
-        ]
-    },
-    {
-        id: "65040112",
-        studentId: "65040112",
-        name: "นางสาวปณิดา วงศ์สวัสดิ์",
-        topic: "ระบบเฝ้าระวังและแจ้งเตือนโรคพืชในโรงเรือนด้วย IoT และ Edge AI",
-        advisor: "ดร.ศิรเมศร์ วีระสกุลวัฒน์",
-        status: "pending",
-        updatedAt: new Date().toISOString(),
-        history: [
-            { timestamp: new Date().toISOString(), action: "นำเข้าข้อมูลเริ่มต้นในระบบ" }
-        ]
-    }
 ];
 
 // App State
@@ -93,7 +57,7 @@ function initFirebaseOrLocalStorage() {
     if (savedConfigStr) {
         try {
             configToUse = JSON.parse(savedConfigStr);
-        } catch(e) {}
+        } catch (e) { }
     }
 
     if (configToUse && configToUse.projectId && configToUse.projectId.trim() !== "") {
@@ -129,7 +93,7 @@ function initFirebaseOrLocalStorage() {
     useFirebase = false;
     dbStatusChip.className = "status-chip local";
     dbStatusText.innerText = "โหมดทดสอบ (LocalStorage)";
-    
+
     // Seed LocalStorage if empty
     if (!localStorage.getItem('seminar_students')) {
         localStorage.setItem('seminar_students', JSON.stringify(INITIAL_STUDENTS));
@@ -137,7 +101,7 @@ function initFirebaseOrLocalStorage() {
 }
 
 // Global functions for inline HTML calls
-window.switchView = function(viewName) {
+window.switchView = function (viewName) {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
 
@@ -151,12 +115,12 @@ window.switchView = function(viewName) {
     }
 };
 
-window.quickSearch = function(sid) {
+window.quickSearch = function (sid) {
     searchInput.value = sid;
     handleSearch(new Event('submit'));
 };
 
-window.handleSearch = async function(event) {
+window.handleSearch = async function (event) {
     if (event) event.preventDefault();
     const query = searchInput.value.trim();
     if (!query) return;
@@ -260,7 +224,7 @@ function renderStudentResult(student) {
 }
 
 // Requirement 3: Confirm Current Data without Changes
-window.confirmCurrentData = async function() {
+window.confirmCurrentData = async function () {
     if (!currentStudent) return;
 
     const timestamp = new Date().toISOString();
@@ -279,7 +243,7 @@ window.confirmCurrentData = async function() {
 };
 
 // Dynamic Advisor Dropdown Handler
-window.populateAdvisorDropdown = function() {
+window.populateAdvisorDropdown = function () {
     const selectEl = document.getElementById('editAdvisorSelect');
     if (!selectEl) return;
 
@@ -313,7 +277,7 @@ window.populateAdvisorDropdown = function() {
     selectEl.appendChild(newOpt);
 };
 
-window.handleAdvisorSelectChange = function(selectEl) {
+window.handleAdvisorSelectChange = function (selectEl) {
     const customInput = document.getElementById('editAdvisorCustom');
     if (selectEl.value === '__NEW__') {
         customInput.style.display = 'block';
@@ -327,10 +291,10 @@ window.handleAdvisorSelectChange = function(selectEl) {
 };
 
 // Requirement 4: Show Edit Form
-window.showEditForm = function() {
+window.showEditForm = function () {
     if (!currentStudent) return;
     document.getElementById('editTopic').value = currentStudent.topic || '';
-    
+
     // Populate advisor dropdown dynamically
     populateAdvisorDropdown();
 
@@ -363,13 +327,13 @@ window.showEditForm = function() {
     mainActions.style.display = 'none';
 };
 
-window.hideEditForm = function() {
+window.hideEditForm = function () {
     editFormCard.classList.remove('show');
     mainActions.style.display = 'flex';
 };
 
 // Save Topic & Advisor Update
-window.handleSaveUpdate = async function(event) {
+window.handleSaveUpdate = async function (event) {
     if (event) event.preventDefault();
     if (!currentStudent) return;
 
@@ -439,7 +403,7 @@ async function renderOverviewTable() {
         if (student.status === 'updated') updatedCount++;
 
         const tr = document.createElement('tr');
-        
+
         let statusTag = `<span class="status-badge pending" style="padding: 2px 8px; font-size: 0.75rem;">รอการอัปเดต</span>`;
         if (student.status === 'confirmed') {
             statusTag = `<span class="status-badge confirmed" style="padding: 2px 8px; font-size: 0.75rem;">ยืนยันแล้ว</span>`;
@@ -500,17 +464,17 @@ function updateAdminUI(user) {
 }
 
 // Admin Auth Modal Handlers
-window.openAdminLoginModal = function() {
+window.openAdminLoginModal = function () {
     const errEl = document.getElementById('adminLoginError');
     if (errEl) errEl.style.display = 'none';
     document.getElementById('adminLoginModal').classList.add('active');
 };
 
-window.closeAdminLoginModal = function() {
+window.closeAdminLoginModal = function () {
     document.getElementById('adminLoginModal').classList.remove('active');
 };
 
-window.handleAdminLoginSubmit = async function(event) {
+window.handleAdminLoginSubmit = async function (event) {
     if (event) event.preventDefault();
     const email = document.getElementById('adminEmail').value.trim();
     const password = document.getElementById('adminPassword').value.trim();
@@ -542,11 +506,11 @@ window.handleAdminLoginSubmit = async function(event) {
     }
 };
 
-window.handleAdminLogout = async function() {
+window.handleAdminLogout = async function () {
     if (useFirebase && auth) {
         try {
             await signOut(auth);
-        } catch(e) {}
+        } catch (e) { }
     }
     isAdmin = false;
     currentUser = null;
@@ -555,7 +519,7 @@ window.handleAdminLogout = async function() {
 };
 
 // Export CSV for Excel (UTF-8 BOM support - Publicly accessible)
-window.exportCSV = function() {
+window.exportCSV = function () {
     let csvContent = "\uFEFFลำดับ,รหัสนักศึกษา,ชื่อ-นามสกุล,หัวข้อสัมมนา,อาจารย์ที่ปรึกษา,สถานะ,วันที่อัปเดตล่าสุด\n";
     allStudents.forEach((s, idx) => {
         const topicClean = `"${(s.topic || '').replace(/"/g, '""')}"`;
@@ -578,7 +542,7 @@ window.exportCSV = function() {
 };
 
 // Modal handlers for Firebase settings (Admin Only)
-window.openConfigModal = function() {
+window.openConfigModal = function () {
     if (!isAdmin) {
         alert("สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น กรุณาล็อกอินผู้ดูแลก่อน");
         openAdminLoginModal();
@@ -587,11 +551,11 @@ window.openConfigModal = function() {
     document.getElementById('configModal').classList.add('active');
 };
 
-window.closeConfigModal = function() {
+window.closeConfigModal = function () {
     document.getElementById('configModal').classList.remove('active');
 };
 
-window.openImportModal = function() {
+window.openImportModal = function () {
     if (!isAdmin) {
         alert("สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น กรุณาล็อกอินผู้ดูแลก่อน");
         openAdminLoginModal();
@@ -600,12 +564,12 @@ window.openImportModal = function() {
     document.getElementById('importModal').classList.add('active');
 };
 
-window.closeImportModal = function() {
+window.closeImportModal = function () {
     document.getElementById('importModal').classList.remove('active');
 };
 
 // Handle CSV / Text Import (Admin Only)
-window.handleProcessImport = async function() {
+window.handleProcessImport = async function () {
     if (!isAdmin) {
         alert("สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น");
         return;
@@ -671,7 +635,7 @@ window.handleProcessImport = async function() {
     renderOverviewTable();
 };
 
-window.saveFirebaseSettings = function() {
+window.saveFirebaseSettings = function () {
     if (!isAdmin) return;
 
     const projectId = document.getElementById('cfgProjectId').value.trim();
@@ -696,7 +660,7 @@ window.saveFirebaseSettings = function() {
     window.location.reload();
 };
 
-window.openAddStudentModal = function() {
+window.openAddStudentModal = function () {
     if (!isAdmin) {
         alert("สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น กรุณาล็อกอินผู้ดูแลก่อน");
         openAdminLoginModal();
