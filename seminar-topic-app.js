@@ -31,6 +31,11 @@ let currentStudent = null;
 let allStudents = [];
 let isAdmin = false;
 let currentUser = null;
+let systemConfig = {
+    isSubmissionOpen: true,
+    submissionDeadline: "",
+    closedMessage: "ระบบปิดรับการอัปเดตและยืนยันหัวข้อสัมมนาแล้ว"
+};
 
 // DOM Elements
 const dbStatusChip = document.getElementById('dbStatusChip');
@@ -44,6 +49,7 @@ const mainActions = document.getElementById('mainActions');
 document.addEventListener('DOMContentLoaded', async () => {
     initFirebaseOrLocalStorage();
     setupEventListeners();
+    await loadSystemConfig();
     await loadAllStudents();
     renderOverviewTable();
     updateAdminUI(null);
@@ -97,6 +103,101 @@ function initFirebaseOrLocalStorage() {
     // Seed LocalStorage if empty
     if (!localStorage.getItem('seminar_students')) {
         localStorage.setItem('seminar_students', JSON.stringify(INITIAL_STUDENTS));
+    }
+}
+
+// Check if system is closed based on open toggle & deadline datetime
+function checkIsSubmissionClosed() {
+    if (!systemConfig.isSubmissionOpen) return true;
+    if (systemConfig.submissionDeadline && systemConfig.submissionDeadline.trim() !== "") {
+        const deadlineDate = new Date(systemConfig.submissionDeadline);
+        if (!isNaN(deadlineDate.getTime()) && new Date() > deadlineDate) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Load System Config from Firestore or LocalStorage
+async function loadSystemConfig() {
+    if (useFirebase && db) {
+        try {
+            const configRef = doc(db, "settings", "system_config");
+            const docSnap = await getDoc(configRef);
+            if (docSnap.exists()) {
+                systemConfig = { ...systemConfig, ...docSnap.data() };
+            }
+            // Listen real-time to deadline changes
+            onSnapshot(configRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    systemConfig = { ...systemConfig, ...snapshot.data() };
+                    updateSystemDeadlineUI();
+                }
+            });
+        } catch (e) {
+            console.error("Error loading system config from Firestore:", e);
+        }
+    } else {
+        const localCfg = localStorage.getItem('seminar_system_config');
+        if (localCfg) {
+            try {
+                systemConfig = { ...systemConfig, ...JSON.parse(localCfg) };
+            } catch (e) { }
+        }
+    }
+    updateSystemDeadlineUI();
+}
+
+// Update Deadline UI Elements across Student Card & Top Banner
+function updateSystemDeadlineUI() {
+    const bannerEl = document.getElementById('systemDeadlineNotice');
+    const bannerText = document.getElementById('deadlineBannerText');
+    const bannerCountdown = document.getElementById('deadlineCountdown');
+    const closureAlert = document.getElementById('closureAlert');
+    const closureAlertDetail = document.getElementById('closureAlertDetail');
+    const mainActions = document.getElementById('mainActions');
+
+    const isClosed = checkIsSubmissionClosed();
+
+    if (bannerEl) {
+        if (isClosed) {
+            bannerEl.style.display = 'flex';
+            bannerEl.className = 'deadline-banner closed';
+            bannerText.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <strong>ระบบปิดรับคำตอบแล้ว</strong> (${systemConfig.closedMessage || 'หมดเวลาทำการอัปเดต'})`;
+            bannerCountdown.innerText = 'ปิดการรับข้อมูลแล้ว';
+        } else if (systemConfig.submissionDeadline && systemConfig.submissionDeadline.trim() !== "") {
+            const d = new Date(systemConfig.submissionDeadline);
+            if (!isNaN(d.getTime())) {
+                bannerEl.style.display = 'flex';
+                bannerEl.className = 'deadline-banner open';
+                const formattedDate = d.toLocaleString('th-TH', {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                bannerText.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> ระบบเปิดรับคำตอบถึง: <strong>${formattedDate} น.</strong>`;
+                bannerCountdown.innerText = `หมดเขต ${formattedDate}`;
+            } else {
+                bannerEl.style.display = 'none';
+            }
+        } else {
+            bannerEl.style.display = 'none';
+        }
+    }
+
+    if (closureAlert && mainActions) {
+        if (isClosed) {
+            closureAlert.style.display = 'flex';
+            if (closureAlertDetail) {
+                closureAlertDetail.innerText = systemConfig.closedMessage || "หมดระยะเวลาในการแก้ไขหัวข้อสัมมนาตามที่ผู้ดูแลระบบกำหนด";
+            }
+            mainActions.style.display = 'none';
+            hideEditForm();
+        } else {
+            closureAlert.style.display = 'none';
+            if (resultCard && resultCard.classList.contains('show') && (!editFormCard || !editFormCard.classList.contains('show'))) {
+                mainActions.style.display = 'flex';
+            }
+        }
     }
 }
 
@@ -219,6 +320,7 @@ function renderStudentResult(student) {
     }
 
     hideEditForm();
+    updateSystemDeadlineUI();
     resultCard.classList.add('show');
     resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -226,6 +328,11 @@ function renderStudentResult(student) {
 // Requirement 3: Confirm Current Data without Changes
 window.confirmCurrentData = async function () {
     if (!currentStudent) return;
+
+    if (checkIsSubmissionClosed()) {
+        alert(systemConfig.closedMessage || 'ระบบปิดรับคำตอบและการแก้ไขหัวข้อสัมมนาแล้ว');
+        return;
+    }
 
     const timestamp = new Date().toISOString();
     const updatePayload = {
@@ -293,6 +400,12 @@ window.handleAdvisorSelectChange = function (selectEl) {
 // Requirement 4: Show Edit Form
 window.showEditForm = function () {
     if (!currentStudent) return;
+
+    if (checkIsSubmissionClosed()) {
+        alert(systemConfig.closedMessage || 'ระบบปิดรับคำตอบและการแก้ไขหัวข้อสัมมนาแล้ว');
+        return;
+    }
+
     document.getElementById('editTopic').value = currentStudent.topic || '';
 
     // Populate advisor dropdown dynamically
@@ -336,6 +449,11 @@ window.hideEditForm = function () {
 window.handleSaveUpdate = async function (event) {
     if (event) event.preventDefault();
     if (!currentStudent) return;
+
+    if (checkIsSubmissionClosed()) {
+        alert(systemConfig.closedMessage || 'ระบบปิดรับคำตอบและการแก้ไขหัวข้อสัมมนาแล้ว');
+        return;
+    }
 
     const newTopic = document.getElementById('editTopic').value.trim();
     const selectVal = document.getElementById('editAdvisorSelect').value;
@@ -444,6 +562,7 @@ function updateAdminUI(user) {
     const statusBar = document.getElementById('dbStatusBar');
     const importBtn = document.getElementById('btnImportCSV');
     const addBtn = document.getElementById('btnAddStudent');
+    const deadlineConfigBtn = document.getElementById('btnDeadlineConfig');
 
     if (isAdmin) {
         if (loginBtn) loginBtn.style.display = 'none';
@@ -453,6 +572,7 @@ function updateAdminUI(user) {
         if (configBtn) configBtn.style.display = 'inline-block';
         if (importBtn) importBtn.style.display = 'inline-flex';
         if (addBtn) addBtn.style.display = 'inline-flex';
+        if (deadlineConfigBtn) deadlineConfigBtn.style.display = 'inline-flex';
     } else {
         if (loginBtn) loginBtn.style.display = 'inline-flex';
         if (userChip) userChip.style.display = 'none';
@@ -460,6 +580,7 @@ function updateAdminUI(user) {
         if (configBtn) configBtn.style.display = 'none';
         if (importBtn) importBtn.style.display = 'none';
         if (addBtn) addBtn.style.display = 'none';
+        if (deadlineConfigBtn) deadlineConfigBtn.style.display = 'none';
     }
 }
 
@@ -696,3 +817,68 @@ window.openAddStudentModal = function () {
 function setupEventListeners() {
     // extra event listeners if needed
 }
+
+// Deadline & Submission Settings Handlers (Admin Only)
+window.openDeadlineModal = function () {
+    if (!isAdmin) {
+        alert("สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น กรุณาล็อกอินผู้ดูแลก่อน");
+        openAdminLoginModal();
+        return;
+    }
+    const openToggle = document.getElementById('cfgSubmissionOpen');
+    const deadlineInput = document.getElementById('cfgSubmissionDeadline');
+    const msgInput = document.getElementById('cfgClosedMessage');
+
+    if (openToggle) openToggle.checked = systemConfig.isSubmissionOpen !== false;
+    updateToggleLabel(openToggle);
+    if (deadlineInput) deadlineInput.value = systemConfig.submissionDeadline || '';
+    if (msgInput) msgInput.value = systemConfig.closedMessage || '';
+
+    document.getElementById('deadlineModal').classList.add('active');
+};
+
+window.closeDeadlineModal = function () {
+    document.getElementById('deadlineModal').classList.remove('active');
+};
+
+window.updateToggleLabel = function (checkbox) {
+    const label = document.getElementById('toggleStatusLabel');
+    if (label) {
+        if (checkbox.checked) {
+            label.innerText = 'กำลังเปิดรับคำตอบ (ผู้ใช้งานสามารถยืนยัน/แก้ไขได้)';
+            label.style.color = 'var(--green-primary)';
+        } else {
+            label.innerText = 'ปิดรับคำตอบทันที (ผู้ใช้งานไม่สามารถยืนยัน/แก้ไขได้)';
+            label.style.color = '#dc2626';
+        }
+    }
+};
+
+window.handleSaveDeadlineSettings = async function (event) {
+    if (event) event.preventDefault();
+    if (!isAdmin) return;
+
+    const isSubmissionOpen = document.getElementById('cfgSubmissionOpen').checked;
+    const submissionDeadline = document.getElementById('cfgSubmissionDeadline').value;
+    const closedMessage = document.getElementById('cfgClosedMessage').value.trim() || 'ระบบปิดรับการอัปเดตและยืนยันหัวข้อสัมมนาแล้ว';
+
+    systemConfig = {
+        isSubmissionOpen,
+        submissionDeadline,
+        closedMessage
+    };
+
+    if (useFirebase && db) {
+        try {
+            await setDoc(doc(db, "settings", "system_config"), systemConfig, { merge: true });
+        } catch (e) {
+            console.error("Error saving system_config to Firestore:", e);
+        }
+    }
+
+    localStorage.setItem('seminar_system_config', JSON.stringify(systemConfig));
+    updateSystemDeadlineUI();
+    closeDeadlineModal();
+    alert('บันทึกการตั้งค่ากำหนดเวลาปิดรับคำตอบเรียบร้อยแล้ว');
+};
+

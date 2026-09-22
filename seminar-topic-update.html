@@ -55,6 +55,17 @@
         </div>
     </div>
 
+    <!-- System Deadline Notice Banner -->
+    <div class="main-content" style="margin-top: 0.5rem; margin-bottom: -0.5rem;">
+        <div id="systemDeadlineNotice" class="deadline-banner" style="display: none;">
+            <div class="deadline-info">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span id="deadlineBannerText">ระบบกำลังเปิดรับการยืนยัน/อัปเดตหัวข้อสัมมนา</span>
+            </div>
+            <div id="deadlineCountdown" class="deadline-badge"></div>
+        </div>
+    </div>
+
     <!-- Main Container -->
     <main class="main-content">
 
@@ -110,6 +121,15 @@
                     <div class="detail-box">
                         <label><i class="fa-solid fa-user-tie"></i> อาจารย์ที่ปรึกษา</label>
                         <div class="val" id="resAdvisor">ดร.ศิรเมศร์ วีระสกุลวัฒน์</div>
+                    </div>
+                </div>
+
+                <!-- Action Closure Alert (Shows when submission is closed) -->
+                <div id="closureAlert" class="closure-alert" style="display: none;">
+                    <i class="fa-solid fa-lock" style="font-size: 1.2rem;"></i>
+                    <div>
+                        <strong>ระบบปิดรับการอัปเดตและยืนยันข้อมูลแล้ว</strong>
+                        <p style="font-size: 0.8rem; margin-top: 2px;" id="closureAlertDetail">หมดระยะเวลาในการแก้ไขหัวข้อตามที่ผู้ดูแลระบบกำหนด</p>
                     </div>
                 </div>
 
@@ -179,6 +199,11 @@
                                 style="color: var(--orange-primary);">0</strong></div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="nav-btn admin-only-btn" id="btnDeadlineConfig"
+                            style="background: var(--orange-subtle); color: var(--orange-primary); display: none;"
+                            onclick="openDeadlineModal()">
+                            <i class="fa-solid fa-clock"></i> ตั้งเวลาปิดรับคำตอบ
+                        </button>
                         <button class="nav-btn admin-only-btn" id="btnImportCSV"
                             style="background: var(--bg-surface-subtle); display: none;" onclick="openImportModal()">
                             <i class="fa-solid fa-file-import"></i> นำเข้าข้อมูล (CSV/Excel)
@@ -302,6 +327,51 @@
                     <button type="button" class="btn-cancel" onclick="closeAdminLoginModal()">ยกเลิก</button>
                     <button type="submit" class="btn-save">
                         <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Deadline & System Open/Close Settings (Admin Only) -->
+    <div class="modal-overlay" id="deadlineModal">
+        <div class="modal-box" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-clock" style="color: var(--orange-primary);"></i> ตั้งเวลาปิดรับคำตอบและการอัปเดต</h3>
+                <button class="close-modal" onclick="closeDeadlineModal()">&times;</button>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                กำหนดเวลาหมดเขตการยืนยัน/แก้ไขหัวข้อสัมมนา หรือเปิด-ปิดการรับข้อมูลทันที
+            </p>
+            <form id="deadlineForm" onsubmit="handleSaveDeadlineSettings(event)">
+                <div class="form-group" style="background: var(--bg-surface-subtle); padding: 0.75rem; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: var(--text-black-bold); font-size: 0.9rem;">สถานะการรับคำตอบ</strong>
+                        <p style="font-size: 0.78rem; color: var(--text-muted);" id="toggleStatusLabel">กำลังเปิดรับคำตอบ</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="cfgSubmissionOpen" checked onchange="updateToggleLabel(this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="cfgSubmissionDeadline"><i class="fa-regular fa-calendar-check"></i> กำหนดวัน-เวลาปิดรับคำตอบ (Deadline)</label>
+                    <input type="datetime-local" id="cfgSubmissionDeadline" class="form-control">
+                    <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">
+                        * เมื่อถึงเวลาที่กำหนด ระบบจะปิดรับการยืนยันและแก้ไขหัวข้ออัตโนมัติ (หากไม่ระบุ จะยึดตามสวิตช์เปิด-ปิด)
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="cfgClosedMessage">ข้อความแจ้งเตือนเมื่อระบบปิด</label>
+                    <input type="text" id="cfgClosedMessage" class="form-control" placeholder="เช่น ระบบปิดรับการแก้ไขหัวข้อสัมมนาแล้ว">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeDeadlineModal()">ยกเลิก</button>
+                    <button type="submit" class="btn-save">
+                        <i class="fa-solid fa-floppy-disk"></i> บันทึกการตั้งค่า
                     </button>
                 </div>
             </form>

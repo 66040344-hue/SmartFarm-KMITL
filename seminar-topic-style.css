@@ -752,3 +752,110 @@ textarea.form-control {
         justify-content: center;
     }
 }
+
+/* System Deadline & Closure Banner Styles */
+.deadline-banner {
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    padding: 0.6rem 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    flex-wrap: wrap;
+}
+
+.deadline-banner.closed {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    color: #991b1b;
+}
+
+.deadline-banner.open {
+    background: var(--orange-bg);
+    border-left: 4px solid var(--orange-primary);
+    color: var(--orange-hover);
+}
+
+.deadline-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.deadline-badge {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg-surface);
+    color: var(--text-black-bold);
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+    font-size: 0.78rem;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.closure-alert {
+    background: #fef2f2;
+    border: 1px dashed #fca5a5;
+    color: #991b1b;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.closure-alert strong {
+    color: #7f1d1d;
+}
+
+/* Toggle Switch Widget */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: .25s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .25s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--green-primary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
