@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบส่งงาน | Seminar Submission</title>
+    <link rel="stylesheet" href="seminar-topic-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Countdown Styles */
+        .countdown-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            padding: 3rem 2rem;
+            margin: 2rem auto;
+            max-width: 800px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .countdown-container h1 {
+            color: var(--green-primary);
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .countdown-container p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .countdown-container h2 {
+            color: var(--orange-primary);
+            font-size: 2.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .timer-box {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .time-item {
+            background: #ffffff;
+            border: 2px solid var(--orange-subtle);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem 2rem;
+            min-width: 130px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .time-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--orange-primary);
+        }
+
+        .time-item span {
+            display: block;
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            font-family: monospace;
+        }
+
+        .time-item .label {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Hidden state for the actual form */
+        #submissionApp {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Submission Specific Styles */
+        .submit-section {
+            background: var(--bg-surface-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border: 1px dashed var(--orange-primary);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .file-upload-box {
+            border: 2px dashed #cbd5e1;
+            padding: 2rem;
+            text-align: center;
+            border-radius: var(--radius-md);
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-box:hover {
+            border-color: var(--orange-primary);
+            background: var(--orange-subtle);
+        }
+
+        .file-upload-box i {
+            font-size: 2.5rem;
+            color: var(--accent-blue);
+            margin-bottom: 1rem;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 600px) {
+            .header-container {
+                justify-content: center !important;
+            }
+
+            .countdown-container {
+                padding: 1rem 0.5rem;
+                margin: 0.5rem auto;
+            }
+
+            .countdown-container h1 {
+                font-size: 1.25rem;
+            }
+
+            .countdown-container p {
+                font-size: 1rem;
+            }
+
+            .countdown-container h2 {
+                font-size: 2rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .timer-box {
+                gap: 0.5rem;
+            }
+
+            .time-item {
+                min-width: 65px;
+                padding: 1rem 0.5rem;
+                border-radius: var(--radius-md);
+                flex: 1 1 0;
+            }
+
+            .time-item span {
+                font-size: 1.8rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .time-item .label {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-container" style="justify-content: center;">
+            <div class="logo-group">
+                <div class="logo-icon"
+                    style="background: linear-gradient(135deg, var(--green-primary), var(--green-primary));">
+                    <i class="fa-solid fa-file-lines" style="color: white;"></i>
+                </div>
+                <div class="logo-text" style="text-align: center;">
+                    <h1>ระบบส่งงานสัมมนา</h1>
+                    <p>Seminar Submission System</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- 1. Countdown View (แสดงก่อนถึงเวลา) -->
+        <div id="countdownView" class="countdown-container">
+            <h1>ยินดีต้อนรับเข้าสู่ระบบส่งงาน</h1>
+            <p>ระบบจะเปิดให้สามารถส่งงานได้ในวันที่</p>
+            <h2>15 ตุลาคม 2569</h2>
+
+            <div class="timer-box">
+                <div class="time-item">
+                    <span id="days">00</span>
+                    <div class="label">วัน</div>
+                </div>
+                <div class="time-item">
+                    <span id="hours">00</span>
+                    <div class="label">ชั่วโมง</div>
+                </div>
+                <div class="time-item">
+                    <span id="minutes">00</span>
+                    <div class="label">นาที</div>
+                </div>
+                <div class="time-item">
+                    <span id="seconds">00</span>
+                    <div class="label">วินาที</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Submission App View (จะแสดงเมื่อถึงเวลาตามแผน) -->
+        <div id="submissionApp">
+            <div class="search-card">
+                <h2><i class="fa-solid fa-magnifying-glass" style="color: var(--orange-primary);"></i>
+                    ค้นหารหัสนักศึกษาเพื่อส่งงาน</h2>
+                <p>กรอกรหัสนักศึกษา 8 หลักเพื่อดำเนินการ</p>
+                <form id="submitSearchForm"
+                    onsubmit="event.preventDefault(); document.getElementById('submitResultCard').style.display='block';">
+                    <div class="search-input-box">
+                        <input type="text" class="search-input" placeholder="กรอกรหัสนักศึกษา เช่น 65040425"
+                            maxlength="10" required>
+                        <button type="submit" class="search-btn">
+                            <i class="fa-solid fa-search"></i> ค้นหา
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Result Card for Submission -->
+            <div id="submitResultCard" class="result-card" style="display: none; margin-top: 1.5rem;">
+                <div class="result-header">
+                    <div class="student-meta">
+                        <h3>นายศักย์พิสิฐ ชิณสีห์</h3>
+                        <div style="margin-top: 6px;">
+                            <span class="student-id-badge">65040425</span>
+                        </div>
+                    </div>
+                    <div class="status-badge pending"
+                        style="background: var(--bg-surface-subtle); color: var(--text-muted); border: 1px solid #cbd5e1;">
+                        <i class="fa-solid fa-file-circle-xmark"></i> ยังไม่ส่งงาน
+                    </div>
+                </div>
+
+                <div class="submit-section">
+                    <h4><i class="fa-solid fa-file-arrow-up"></i> เลือกช่องทางการส่งงาน</h4>
+
+                    <div class="radio-group" style="margin-top: 1rem;">
+                        <label class="radio-item">
+                            <input type="radio" name="submitType" value="link" checked onchange="toggleSubmitType()">
+                            แนบลิงก์ (URL)
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="submitType" value="file" onchange="toggleSubmitType()">
+                            อัปโหลดไฟล์ PDF
+                        </label>
+                    </div>
+
+                    <!-- Link Form -->
+                    <div id="linkForm" style="display: block;">
+                        <div class="form-group">
+                            <label>วางลิงก์ผลงาน (เช่น Google Drive, Canva)</label>
+                            <input type="url" class="form-control" placeholder="https://...">
+                        </div>
+                    </div>
+
+                    <!-- File Form -->
+                    <div id="fileForm" style="display: none;">
+                        <div class="form-group">
+                            <label>อัปโหลดไฟล์ (เฉพาะ .pdf ขนาดไม่เกิน 5MB)</label>
+                            <div class="file-upload-box" onclick="document.getElementById('pdfUpload').click()">
+                                <i class="fa-regular fa-file-pdf"></i>
+                                <div>คลิกเพื่อเลือกไฟล์ PDF หรือลากไฟล์มาวางที่นี่</div>
+                                <input type="file" id="pdfUpload" accept=".pdf" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions" style="margin-top: 1.5rem;">
+                        <button type="button" class="btn-save" style="width: 100%; justify-content: center;">
+                            <i class="fa-solid fa-paper-plane"></i> ส่งงาน
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Target Date: 15 October 2026, 00:00:00 
+        // Note: Months in JS Date are 0-indexed, so 9 is October
+        const targetDate = new Date(2026, 9, 15, 0, 0, 0).getTime();
+
+        const updateCountdown = () => {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            if (distance < 0) {
+                // Time has passed, hide countdown and show the submission app
+                document.getElementById('countdownView').style.display = 'none';
+                document.getElementById('submissionApp').style.display = 'block';
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('days').innerText = days.toString().padStart(2, '0');
+            document.getElementById('hours').innerText = hours.toString().padStart(2, '0');
+            document.getElementById('minutes').innerText = minutes.toString().padStart(2, '0');
+            document.getElementById('seconds').innerText = seconds.toString().padStart(2, '0');
+        };
+
+        // UI Toggle for Submission Types
+        function toggleSubmitType() {
+            const type = document.querySelector('input[name="submitType"]:checked').value;
+            if (type === 'link') {
+                document.getElementById('linkForm').style.display = 'block';
+                document.getElementById('fileForm').style.display = 'none';
+            } else {
+                document.getElementById('linkForm').style.display = 'none';
+                document.getElementById('fileForm').style.display = 'block';
+            }
+        }
+
+        // Initialize Countdown Interval
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+</body>
+
+</html>
