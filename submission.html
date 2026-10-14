@@ -3,461 +3,411 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบส่งงาน | Seminar Submission</title>
-    <link rel="stylesheet" href="seminar-topic-style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#15803d">
+    <title>ส่งไฟล์นำเสนอสัมมนา | Smart Farm Seminar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Countdown Styles */
-        .countdown-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 60vh;
-            padding: 3rem 2rem;
-            margin: 2rem auto;
-            max-width: 800px;
-            animation: fadeIn 0.8s ease-out;
+        :root {
+            --green-primary: #15803d;
+            --green-dark: #14532d;
+            --green-subtle: #dcfce7;
+            --orange-primary: #ea580c;
+            --accent-blue: #1d4ed8;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg-page: #f1f5f2;
+            --bg-surface: #ffffff;
+            --bg-surface-subtle: #f1f5f9;
+            --border: #e2e8f0;
+            --radius: 16px;
+            --tap: 52px;
         }
 
-        .countdown-container h1 {
-            color: var(--green-primary);
-            font-size: 2.2rem;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            margin: 0;
+            font-family: 'Noto Sans Thai', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            background: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.55;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--green-dark), var(--green-primary));
+            color: #fff;
+            padding: calc(1.1rem + env(safe-area-inset-top)) 1rem 4.2rem;
+        }
+
+        .hero-inner { max-width: 560px; margin: 0 auto; display: flex; gap: .8rem; align-items: center; }
+
+        .hero-icon {
+            width: 46px; height: 46px; flex: none; border-radius: 14px;
+            background: rgba(255, 255, 255, .18);
+            display: grid; place-items: center; font-size: 1.3rem;
+        }
+
+        .hero h1 { margin: 0; font-size: 1.15rem; line-height: 1.3; }
+        .hero p { margin: 0; font-size: .85rem; opacity: .85; }
+
+        main { max-width: 560px; margin: -3rem auto 0; padding: 0 1rem 2.5rem; }
+
+        .card {
+            background: var(--bg-surface);
+            border-radius: var(--radius);
+            box-shadow: 0 6px 20px rgba(15, 23, 42, .08);
+            padding: 1.25rem;
             margin-bottom: 1rem;
         }
 
-        .countdown-container p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
+        .card h2 { margin: 0 0 .35rem; font-size: 1.1rem; }
+        .card h3 { margin: 0; font-size: 1rem; }
+        .muted { color: var(--text-muted); font-size: .9rem; }
+
+        /* Steps */
+        /* Tracking แบบขนส่ง */
+        .track { margin-top: 1.1rem; padding: 1rem .5rem 1.1rem; border-radius: 14px; background: #f8fafc; border: 1px solid var(--border); }
+        .track-title { margin: 0 0 1rem .5rem; font-size: .95rem; }
+        .track-steps { list-style: none; margin: 0; padding: 0; display: flex; }
+        .t-step { flex: 1 1 0; min-width: 0; position: relative; text-align: center; padding: 0 .15rem; color: var(--text-muted); }
+        /* เส้นเชื่อมจากขั้นก่อนหน้า */
+        .t-step + .t-step::before {
+            content: ""; position: absolute; top: 18px; right: 50%; width: 100%; height: 4px;
+            background: var(--border); z-index: 0;
+        }
+        .t-step.done::before, .t-step.active::before { background: var(--green-primary); }
+        .t-step.active::before {
+            background: linear-gradient(90deg, var(--green-primary) 0 40%, #bbf7d0 60%, var(--green-primary) 80%);
+            background-size: 200% 100%; animation: lineFlow 1.6s linear infinite;
+        }
+        .t-step.warn::before { background: #ef4444; }
+
+        .t-dot {
+            position: relative; z-index: 1; overflow: hidden;
+            width: 40px; height: 40px; margin: -2px auto 0; border-radius: 50%;
+            display: grid; place-items: center; font-size: 1rem;
+            background: #e2e8f0; color: #94a3b8; border: 3px solid #fff; box-shadow: 0 0 0 2px var(--border);
+        }
+        .t-label { display: block; margin-top: .5rem; font-size: .72rem; font-weight: 600; line-height: 1.3; }
+        .t-sub { display: block; margin-top: .15rem; font-size: .66rem; line-height: 1.3; color: var(--text-muted); }
+
+        .t-step.done { color: var(--green-dark); }
+        .t-step.done .t-dot { background: var(--green-primary); color: #fff; box-shadow: 0 0 0 2px var(--green-primary); animation: dotPop .45s both; animation-delay: calc(var(--n, 0) * .22s); }
+
+        .t-step.active { color: var(--green-primary); }
+        .t-step.active .t-dot {
+            background: #fff; color: var(--green-primary); box-shadow: 0 0 0 2px var(--green-primary);
+            animation: pulseRing 1.6s ease-out infinite;
+        }
+        /* แสงวาบผ่านจุดที่กำลังอยู่ */
+        .t-step.active .t-dot::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .95) 50%, transparent 70%);
+            transform: translateX(-120%); animation: glint 1.8s ease-in-out infinite;
+        }
+        /* แสงวาบผ่านตัวหนังสือ */
+        .t-step.active .t-label {
+            background: linear-gradient(100deg, var(--green-primary) 35%, #86efac 50%, var(--green-primary) 65%);
+            background-size: 250% 100%; -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; animation: textShine 2s linear infinite;
         }
 
-        .countdown-container h2 {
-            color: var(--orange-primary);
-            font-size: 2.5rem;
-            margin-bottom: 2.5rem;
+        .t-step.warn { color: #b91c1c; }
+        .t-step.warn .t-dot { background: #ef4444; box-shadow: 0 0 0 2px #ef4444; color: #fff; }
+
+        @keyframes glint { 0% { transform: translateX(-120%); } 55%, 100% { transform: translateX(120%); } }
+        @keyframes pulseRing { 0% { box-shadow: 0 0 0 2px var(--green-primary), 0 0 0 2px rgba(21, 128, 61, .5); } 100% { box-shadow: 0 0 0 2px var(--green-primary), 0 0 0 12px rgba(21, 128, 61, 0); } }
+        @keyframes textShine { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+        @keyframes lineFlow { 0% { background-position: 200% 0; } 100% { background-position: 0 0; } }
+        @keyframes dotPop { 0% { transform: scale(.6); opacity: .4; } 70% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+
+        @media (max-width: 380px) {
+            .t-dot { width: 34px; height: 34px; font-size: .85rem; }
+            .t-step + .t-step::before { top: 15px; }
+            .t-label { font-size: .66rem; }
         }
 
-        .timer-box {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
+        /* Buttons */
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: .6rem;
+            width: 100%; min-height: var(--tap); padding: .75rem 1rem;
+            border: 0; border-radius: 14px; font: inherit; font-weight: 600; font-size: 1rem;
+            cursor: pointer; text-decoration: none;
+            background: var(--green-primary); color: #fff;
+            transition: transform .1s, opacity .2s;
+        }
+        .btn:active { transform: scale(.98); }
+        .btn:disabled { opacity: .55; cursor: not-allowed; }
+        .btn.ghost { background: var(--bg-surface-subtle); color: var(--text-main); }
+        .btn.danger { background: #fee2e2; color: #b91c1c; }
+        .btn.small { min-height: 44px; font-size: .9rem; width: auto; flex: 1 1 140px; }
+
+        .btn:focus-visible, .seg input:focus-visible + span, input:focus-visible {
+            outline: 3px solid #86efac; outline-offset: 2px;
         }
 
-        .time-item {
-            background: #ffffff;
-            border: 2px solid var(--orange-subtle);
-            border-radius: var(--radius-lg);
-            padding: 1.5rem 2rem;
-            min-width: 130px;
-            text-align: center;
-            box-shadow: var(--shadow-sm);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        /* Countdown */
+        .countdown { text-align: center; }
+        .countdown h2 { font-size: 1.3rem; color: var(--green-primary); }
+        .countdown .date { font-size: 1.6rem; font-weight: 700; color: var(--orange-primary); margin: .25rem 0 1rem; }
+        .timer-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+        .time-item { background: var(--bg-surface-subtle); border-radius: 12px; padding: .8rem .2rem; }
+        .time-item span { display: block; font-size: 1.7rem; font-weight: 700; color: var(--accent-blue); font-variant-numeric: tabular-nums; }
+        .time-item .label { font-size: .75rem; color: var(--text-muted); }
+
+        #submissionApp { display: none; }
+
+        /* Student header */
+        .student-head { display: flex; justify-content: space-between; gap: .75rem; align-items: flex-start; flex-wrap: wrap; }
+        .student-head h3 { font-size: 1.05rem; word-break: break-word; }
+        .id-badge {
+            display: inline-block; margin-top: .25rem; padding: .1rem .6rem; border-radius: 999px;
+            background: var(--bg-surface-subtle); font-size: .8rem; font-weight: 600; font-variant-numeric: tabular-nums;
+        }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .8rem;
+            border-radius: 999px; font-size: .85rem; font-weight: 600; border: 1px solid transparent;
+        }
+        .logout-link {
+            background: none; border: 0; color: var(--text-muted); font: inherit; font-size: .85rem;
+            padding: .5rem 0; min-height: 44px; cursor: pointer; text-decoration: underline;
         }
 
-        .time-item:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-md);
-            border-color: var(--orange-primary);
-        }
+        /* Boxes */
+        .box { margin-top: 1rem; padding: 1rem; border-radius: 12px; }
+        .box h4 { margin: 0; font-size: .95rem; }
+        #submittedInfoBox { display: none; background: #f0fdf4; border: 1px solid #bbf7d0; }
+        #evalDisplayBox { display: none; border-left: 4px solid var(--orange-primary); background: #fff7ed; }
+        #submittedLink { display: inline-block; margin-top: .5rem; color: var(--accent-blue); font-weight: 600; word-break: break-all; }
+        .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
 
-        .time-item span {
-            display: block;
-            font-size: 3.5rem;
-            font-weight: 800;
-            color: var(--accent-blue);
-            line-height: 1;
-            margin-bottom: 0.5rem;
-            font-family: monospace;
+        /* Form */
+        .seg { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; background: var(--bg-surface-subtle); padding: .3rem; border-radius: 14px; margin: 1rem 0; }
+        .seg label { position: relative; }
+        .seg input { position: absolute; opacity: 0; inset: 0; }
+        .seg span {
+            display: flex; align-items: center; justify-content: center; gap: .4rem;
+            min-height: 46px; border-radius: 11px; font-weight: 600; font-size: .92rem; color: var(--text-muted); cursor: pointer;
         }
+        .seg input:checked + span { background: #fff; color: var(--green-primary); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
 
-        .time-item .label {
-            font-size: 1.1rem;
-            color: var(--text-muted);
-            font-weight: 600;
+        .field label { display: block; font-weight: 600; font-size: .92rem; margin-bottom: .4rem; }
+        .form-control {
+            width: 100%; min-height: var(--tap); padding: .7rem .9rem; font: inherit; font-size: 16px; /* 16px กัน iOS ซูมเอง */
+            border: 1.5px solid #cbd5e1; border-radius: 12px; background: #fff;
         }
-
-        /* Hidden state for the actual form */
-        #submissionApp {
-            display: none;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        /* Submission Specific Styles */
-        .submit-section {
-            background: var(--bg-surface-subtle);
-            border-radius: var(--radius-md);
-            padding: 1.5rem;
-            margin-top: 1.5rem;
-            border: 1px dashed var(--orange-primary);
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .radio-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-        }
+        .hint { margin-top: .5rem; font-size: .82rem; color: var(--text-muted); }
 
         .file-upload-box {
-            border: 2px dashed #cbd5e1;
-            padding: 2rem;
-            text-align: center;
-            border-radius: var(--radius-md);
-            background: #ffffff;
-            cursor: pointer;
-            transition: all 0.2s;
+            border: 2px dashed #94a3b8; border-radius: 14px; background: #f8fafc;
+            padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: .2s;
+        }
+        .file-upload-box.drag, .file-upload-box:hover { border-color: var(--green-primary); background: #f0fdf4; }
+        .file-upload-box i { font-size: 2.2rem; color: var(--green-primary); margin-bottom: .4rem; }
+        #fileNameDisplay { margin-top: .5rem; font-weight: 600; color: var(--green-dark); word-break: break-all; }
+
+        .checklist { margin: 1rem 0 0; padding: .8rem 1rem .8rem 2.2rem; background: #fffbeb; border-radius: 12px; font-size: .85rem; color: #78350f; }
+        .checklist li { margin: .15rem 0; }
+
+        .submit-bar { margin-top: 1.25rem; }
+
+        .site-foot { text-align: center; font-size: .78rem; color: var(--text-muted); padding: 0 1rem 1.5rem; }
+
+        @media (min-width: 600px) {
+            .hero h1 { font-size: 1.35rem; }
+            .card { padding: 1.6rem; }
         }
 
-        .file-upload-box:hover {
-            border-color: var(--orange-primary);
-            background: var(--orange-subtle);
-        }
-
-        .file-upload-box i {
-            font-size: 2.5rem;
-            color: var(--accent-blue);
-            margin-bottom: 1rem;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 600px) {
-            .header-container {
-                justify-content: center !important;
-            }
-
-            .countdown-container {
-                padding: 1rem 0.5rem;
-                margin: 0.5rem auto;
-            }
-
-            .countdown-container h1 {
-                font-size: 1.25rem;
-            }
-
-            .countdown-container p {
-                font-size: 1rem;
-            }
-
-            .countdown-container h2 {
-                font-size: 2rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .timer-box {
-                gap: 0.5rem;
-            }
-
-            .time-item {
-                min-width: 65px;
-                padding: 1rem 0.5rem;
-                border-radius: var(--radius-md);
-                flex: 1 1 0;
-            }
-
-            .time-item span {
-                font-size: 1.8rem;
-                margin-bottom: 0.25rem;
-            }
-
-            .time-item .label {
-                font-size: 0.8rem;
-            }
-        }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
     </style>
 </head>
 
-<body>
-    <header class="header">
-        <div class="header-container" style="justify-content: center;">
-            <div class="logo-group">
-                <div class="logo-icon"
-                    style="background: linear-gradient(135deg, var(--green-primary), var(--green-primary));">
-                    <i class="fa-solid fa-file-lines" style="color: white;"></i>
-                </div>
-                <div class="logo-text" style="text-align: center;">
-                    <h1>ระบบส่งงานสัมมนา</h1>
-                    <p>Seminar Submission System</p>
-                </div>
+<body data-mode="student">
+    <header class="hero">
+        <div class="hero-inner">
+            <div class="hero-icon"><i class="fa-solid fa-seedling"></i></div>
+            <div>
+                <h1>ส่งไฟล์นำเสนอสัมมนา</h1>
+                <p>การจัดการสมาร์ตฟาร์ม · Smart Farm Management</p>
             </div>
         </div>
     </header>
 
-    <main class="main-content">
-        <!-- 1. Countdown View (แสดงก่อนถึงเวลา) -->
-        <div id="countdownView" class="countdown-container">
-            <h1>ยินดีต้อนรับเข้าสู่ระบบส่งงาน</h1>
-            <p>ระบบจะเปิดให้สามารถส่งงานได้ในวันที่</p>
-            <h2>15 ตุลาคม 2569</h2>
-
-            <div class="timer-box">
-                <div class="time-item">
-                    <span id="days">00</span>
-                    <div class="label">วัน</div>
-                </div>
-                <div class="time-item">
-                    <span id="hours">00</span>
-                    <div class="label">ชั่วโมง</div>
-                </div>
-                <div class="time-item">
-                    <span id="minutes">00</span>
-                    <div class="label">นาที</div>
-                </div>
-                <div class="time-item">
-                    <span id="seconds">00</span>
-                    <div class="label">วินาที</div>
-                </div>
+    <main>
+        <!-- 1. Countdown (ก่อนเปิดระบบ) -->
+        <section id="countdownView" class="card countdown">
+            <h2>ระบบจะเปิดให้ส่งงาน</h2>
+            <div class="date">15 ตุลาคม 2569</div>
+            <div class="timer-box" role="timer" aria-live="off">
+                <div class="time-item"><span id="days">00</span><div class="label">วัน</div></div>
+                <div class="time-item"><span id="hours">00</span><div class="label">ชั่วโมง</div></div>
+                <div class="time-item"><span id="minutes">00</span><div class="label">นาที</div></div>
+                <div class="time-item"><span id="seconds">00</span><div class="label">วินาที</div></div>
             </div>
-        </div>
+        </section>
 
-        <!-- 2. Submission App View (จะแสดงเมื่อถึงเวลาตามแผน) -->
+        <!-- 2. แอปส่งงาน -->
         <div id="submissionApp">
-            <!-- Login Section -->
-            <div id="loginSection" class="search-card" style="margin-top: 1rem; text-align: center;">
+            <!-- Login -->
+            <section id="loginSection" class="card">
                 <h2><i class="fa-solid fa-lock" style="color: var(--green-primary);"></i> เข้าสู่ระบบเพื่อส่งงาน</h2>
-                <p>กรุณาเข้าสู่ระบบด้วยอีเมลสถาบัน (@kmitl.ac.th) เท่านั้น</p>
-                <button id="btnGoogleLogin" class="btn-save"
-                    style="margin-top: 1rem; background: var(--green-primary); font-size: 1.1rem; padding: 0.8rem 1.5rem;">
-                    <i class="fa-brands fa-google"></i> เข้าสู่ระบบนักศึกษา (Google)
+                <p class="muted">ใช้อีเมลนักศึกษา <strong>รหัส 8 หลัก@kmitl.ac.th</strong> เท่านั้น</p>
+                <button id="btnGoogleLogin" class="btn" style="margin-top: 1rem;">
+                    <i class="fa-brands fa-google"></i> เข้าสู่ระบบด้วย Google
                 </button>
+            </section>
 
-                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
-                    <button id="btnToggleAdminLogin" class="btn-edit"
-                        style="background: transparent; color: var(--text-muted); font-size: 0.9rem;">
-                        <i class="fa-solid fa-user-shield"></i> เข้าสู่ระบบสำหรับผู้ดูแลระบบ
-                    </button>
-                    <form id="adminLoginForm"
-                        style="display: none; margin-top: 1rem; text-align: left; max-width: 300px; margin-left: auto; margin-right: auto; padding: 1rem; border: 1px dashed var(--orange-primary); border-radius: var(--radius-md);">
-                        <div class="form-group">
-                            <label>อีเมลผู้ดูแล</label>
-                            <input type="email" id="adminEmail" class="form-control" placeholder="admin@kmitl.ac.th"
-                                required>
-                        </div>
-                        <div class="form-group" style="margin-top: 0.8rem;">
-                            <label>รหัสผ่าน</label>
-                            <input type="password" id="adminPassword" class="form-control" placeholder="••••••••"
-                                required>
-                        </div>
-                        <button type="submit" class="btn-save"
-                            style="width: 100%; margin-top: 1rem; background: var(--orange-primary);">
-                            <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ Admin
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Admin Search Section (ซ่อนไว้ ให้เฉพาะ Admin เห็น) -->
-            <div class="search-card" id="adminSearchSection"
-                style="display: none; margin-top: 1rem; border-color: var(--orange-primary);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2><i class="fa-solid fa-user-shield" style="color: var(--orange-primary);"></i> ค้นหานักศึกษา
-                        (โหมดผู้ดูแล)</h2>
-                    <button id="btnLogout" class="btn-edit"
-                        style="background: var(--bg-surface-subtle); color: var(--text-black-bold);"><i
-                            class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
-                </div>
-                <p>กรอกรหัสนักศึกษา 8 หลักเพื่อดูหรือส่งงานแทน (สำหรับ Admin)</p>
-                <form id="submitSearchForm">
-                    <div class="search-input-box">
-                        <input type="text" id="searchInput" class="search-input"
-                            placeholder="กรอกรหัสนักศึกษา เช่น 65040425" maxlength="10" required>
-                        <button type="submit" class="search-btn" style="background: var(--orange-primary);">
-                            <i class="fa-solid fa-search"></i> ค้นหา
-                        </button>
+            <!-- Result / Submit -->
+            <section id="submitResultCard" class="card" style="display: none;">
+                <div class="student-head">
+                    <div>
+                        <h3 id="resStudentName">-</h3>
+                        <span class="id-badge" id="resStudentID">-</span>
                     </div>
-                </form>
-            </div>
-
-            <!-- Admin Dashboard Section -->
-            <div class="search-card" id="adminDashboardSection"
-                style="display: none; margin-top: 1.5rem; border-color: var(--orange-primary);">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-                    <h2><i class="fa-solid fa-chart-pie" style="color: var(--orange-primary);"></i> ภาพรวมการส่งงาน</h2>
-                    <button id="btnRefreshDashboard" class="btn-edit" style="background: var(--bg-surface-subtle);"><i
-                            class="fa-solid fa-rotate-right"></i> รีเฟรชข้อมูล</button>
-                </div>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
-                        <thead>
-                            <tr style="background: var(--bg-surface-subtle); border-bottom: 2px solid #e2e8f0;">
-                                <th style="padding: 0.75rem;">รหัส/ชื่อ</th>
-                                <th style="padding: 0.75rem;">การส่ง</th>
-                                <th style="padding: 0.75rem;">เวลา</th>
-                                <th style="padding: 0.75rem;">ผลตรวจ</th>
-                                <th style="padding: 0.75rem; text-align: right;">จัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dashboardTableBody">
-                            <tr>
-                                <td colspan="5" style="text-align: center; padding: 1rem;">กำลังโหลดข้อมูล...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Result Card for Submission -->
-            <div id="submitResultCard" class="result-card" style="display: none; margin-top: 1.5rem;">
-                <div class="result-header">
-                    <div class="student-meta">
-                        <h3 id="resStudentName">นายศักย์พิสิฐ ชิณสีห์</h3>
-                        <div style="margin-top: 6px;">
-                            <span class="student-id-badge" id="resStudentID">65040425</span>
-                            <button id="btnStudentLogout" class="btn-edit"
-                                style="background: transparent; color: var(--text-muted); margin-left: 10px; font-size: 0.8rem; padding: 2px 5px;"><i
-                                    class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
-                        </div>
-                    </div>
-                    <div id="resSubmitStatusBadge" class="status-badge pending"
-                        style="background: var(--bg-surface-subtle); color: var(--text-muted); border: 1px solid #cbd5e1;">
+                    <div id="resSubmitStatusBadge" class="status-badge"
+                        style="background: var(--bg-surface-subtle); color: var(--text-muted); border-color: #cbd5e1;">
                         <i class="fa-solid fa-file-circle-xmark"></i> ยังไม่ส่งงาน
                     </div>
                 </div>
 
-                <!-- Display already submitted info if exists -->
-                <div id="submittedInfoBox"
-                    style="display: none; margin-top: 1.5rem; padding: 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md);">
-                    <h4><i class="fa-solid fa-circle-check" style="color: var(--green-primary);"></i> ข้อมูลที่ส่งแล้ว
-                    </h4>
-                    <p style="margin-top: 0.5rem; font-size: 0.9rem;" id="submittedTimeText">ส่งเมื่อ: -</p>
-                    <a href="#" target="_blank" id="submittedLink"
-                        style="display: inline-block; margin-top: 0.5rem; color: var(--accent-blue); font-weight: bold;"><i
-                            class="fa-solid fa-arrow-up-right-from-square"></i> ดูไฟล์/ลิงก์ที่ส่ง</a>
-                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <button type="button" class="btn-edit"
-                            onclick="document.getElementById('submitFormSection').style.display='block';"
-                            style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
-                            <i class="fa-solid fa-pen"></i> แก้ไข/ส่งงานใหม่
+                <!-- ติดตามสถานะแบบขนส่ง (แสดงเมื่อส่งงานแล้ว) -->
+                <div id="trackBox" class="track" style="display: none;">
+                    <h4 class="track-title"><i class="fa-solid fa-file"></i> ติดตามสถานะงาน</h4>
+                    <ol class="track-steps" aria-label="ขั้นตอนการตรวจงาน">
+                        <li class="t-step"><span class="t-dot"><i class="fa-solid fa-paper-plane"></i></span>
+                            <span class="t-label">ส่งงานแล้ว</span><small class="t-sub"></small></li>
+                        <li class="t-step"><span class="t-dot"><i class="fa-solid fa-database"></i></span>
+                            <span class="t-label">ไฟล์ถูกบันทึกเข้าสู่ระบบ</span><small class="t-sub"></small></li>
+                        <li class="t-step"><span class="t-dot"><i class="fa-solid fa-hourglass-half"></i></span>
+                            <span class="t-label">ไฟล์กำลังรอตรวจ</span><small class="t-sub"></small></li>
+                        <li class="t-step"><span class="t-dot"><i class="fa-solid fa-bell"></i></span>
+                            <span class="t-label">แจ้งผลตรวจ</span><small class="t-sub"></small></li>
+                    </ol>
+                </div>
+
+                <!-- ข้อมูลที่ส่งแล้ว -->
+                <div id="submittedInfoBox" class="box">
+                    <h4><i class="fa-solid fa-circle-check" style="color: var(--green-primary);"></i> ส่งงานเรียบร้อยแล้ว</h4>
+                    <p class="muted" style="margin: .4rem 0 0;" id="submittedTimeText">ส่งเมื่อ: -</p>
+                    <a href="#" target="_blank" rel="noopener noreferrer" id="submittedLink">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> ดูไฟล์/ลิงก์ที่ส่ง
+                    </a>
+                    <div class="actions">
+                        <button type="button" class="btn ghost small"
+                            onclick="document.getElementById('submitFormSection').style.display='block'; this.blur(); document.getElementById('submitFormSection').scrollIntoView({behavior:'smooth'});">
+                            <i class="fa-solid fa-pen"></i> ส่งงานใหม่
                         </button>
-                        <button type="button" id="btnDeleteSubmission" class="btn-edit"
-                            style="font-size: 0.85rem; padding: 0.4rem 0.8rem; background: #ef4444; color: white; border: none;">
-                            <i class="fa-solid fa-trash"></i> ยกเลิกการส่งงาน
+                        <button type="button" id="btnDeleteSubmission" class="btn danger small">
+                            <i class="fa-solid fa-trash"></i> ยกเลิกการส่ง
                         </button>
                     </div>
                 </div>
 
-                <!-- Evaluation Display (For students & admins to see) -->
-                <div id="evalDisplayBox"
-                    style="display: none; margin-top: 1.5rem; padding: 1rem; border-radius: var(--radius-md); border-left: 4px solid var(--orange-primary); background: #fff7ed;">
+                <!-- ผลการตรวจ -->
+                <div id="evalDisplayBox" class="box" aria-live="polite">
                     <h4><i class="fa-solid fa-comment-dots"></i> ผลการตรวจ</h4>
-                    <div id="evalStatusDisplay" style="margin-top: 0.5rem; font-weight: bold;"></div>
-                    <p id="evalFeedbackDisplay"
-                        style="margin-top: 0.5rem; font-size: 0.95rem; color: var(--text-muted);"></p>
+                    <div id="evalStatusDisplay" style="margin-top: .5rem; font-weight: 700;"></div>
+                    <p id="evalFeedbackDisplay" class="muted" style="margin: .5rem 0 0;"></p>
                 </div>
 
-                <!-- Admin Evaluation Edit Box (Only for admins) -->
-                <div id="adminEvalBox"
-                    style="display: none; margin-top: 1.5rem; padding: 1rem; background: var(--bg-surface-subtle); border: 1px solid #cbd5e1; border-radius: var(--radius-md);">
-                    <h4><i class="fa-solid fa-clipboard-check" style="color: var(--orange-primary);"></i>
-                        ส่วนสำหรับผู้ดูแล (ประเมินงาน)</h4>
-                    <div class="radio-group" style="margin-top: 1rem;">
-                        <label class="radio-item"><input type="radio" name="evalStatusInput" value="pass"> ผ่าน</label>
-                        <label class="radio-item"><input type="radio" name="evalStatusInput" value="revise">
-                            ต้องแก้ไข</label>
-                    </div>
-                    <div class="form-group" style="margin-top: 1rem;">
-                        <label>ข้อความระบุ (Feedback)</label>
-                        <textarea id="evalFeedbackInput" class="form-control" rows="2"
-                            placeholder="กรอกข้อความแจ้งนักศึกษา..."></textarea>
-                    </div>
-                    <button type="button" id="btnSaveEval" class="btn-save"
-                        style="margin-top: 1rem; background: var(--orange-primary);">
-                        <i class="fa-solid fa-save"></i> บันทึกผลการตรวจ
-                    </button>
-                </div>
-
-                <div class="submit-section" id="submitFormSection">
-                    <h4><i class="fa-solid fa-file-arrow-up"></i> เลือกช่องทางการส่งงาน</h4>
+                <!-- ฟอร์มส่งงาน -->
+                <div id="submitFormSection" style="margin-top: 1.25rem;">
+                    <h3><i class="fa-solid fa-file-arrow-up" style="color: var(--green-primary);"></i> ส่งไฟล์นำเสนอ</h3>
 
                     <form id="submissionForm">
-                        <div class="radio-group" style="margin-top: 1rem;">
-                            <label class="radio-item">
-                                <input type="radio" name="submitType" value="link" checked> แนบลิงก์ (URL)
-                            </label>
-                            <label class="radio-item">
-                                <input type="radio" name="submitType" value="file"> อัปโหลดไฟล์ PDF
-                            </label>
+                        <div class="seg" role="radiogroup" aria-label="ช่องทางการส่งงาน">
+                            <label><input type="radio" name="submitType" value="link" checked><span><i class="fa-solid fa-link"></i> แนบลิงก์</span></label>
+                            <label><input type="radio" name="submitType" value="file"><span><i class="fa-regular fa-file-pdf"></i> อัปโหลด PDF</span></label>
                         </div>
 
-                        <!-- Link Form -->
-                        <div id="linkForm" style="display: block;">
-                            <div class="form-group">
-                                <label>วางลิงก์ผลงาน (เช่น Google Drive, Canva)</label>
-                                <input type="url" id="linkInput" class="form-control" placeholder="https://...">
+                        <div id="linkForm" class="field">
+                            <label for="linkInput">ลิงก์ไฟล์นำเสนอ</label>
+                            <input type="url" id="linkInput" class="form-control" inputmode="url" autocomplete="off"
+                                placeholder="https://drive.google.com/...">
+                            <p class="hint">ใช้ได้กับ Google Drive / Slides / Canva <br>ตั้งสิทธิ์เป็น
+                                <strong>"ทุกคนที่มีลิงก์สามารถดูได้"</strong></p>
+                        </div>
+
+                        <div id="fileForm" class="field" style="display: none;">
+                            <label>ไฟล์ PDF (ไม่เกิน 10 MB)</label>
+                            <div class="file-upload-box" id="dropZone" role="button" tabindex="0"
+                                onclick="document.getElementById('pdfUpload').click()">
+                                <i class="fa-regular fa-file-pdf"></i>
+                                <div><strong>แตะเพื่อเลือกไฟล์ PDF</strong></div>
+                                <div class="muted">หรือลากไฟล์มาวางที่นี่</div>
+                                <div id="fileNameDisplay"></div>
+                                <input type="file" id="pdfUpload" accept=".pdf,application/pdf" style="display: none;">
                             </div>
                         </div>
 
-                        <!-- File Form -->
-                        <div id="fileForm" style="display: none;">
-                            <div class="form-group">
-                                <label>อัปโหลดไฟล์ (เฉพาะ .pdf ขนาดไม่เกิน 10MB)</label>
-                                <div class="file-upload-box" id="dropZone"
-                                    onclick="document.getElementById('pdfUpload').click()">
-                                    <i class="fa-regular fa-file-pdf"></i>
-                                    <div>คลิกเพื่อเลือกไฟล์ PDF หรือลากไฟล์มาวางที่นี่</div>
-                                    <div id="fileNameDisplay"></div>
-                                    <input type="file" id="pdfUpload" accept=".pdf" style="display: none;">
-                                </div>
-                            </div>
-                        </div>
+                        <div id="uploadStatus" style="display: none; margin-top: 1rem; color: var(--green-primary);" aria-live="polite"></div>
 
-                        <div id="uploadStatus" style="color: var(--orange-primary);"><i
-                                class="fa-solid fa-spinner fa-spin"></i> กำลังอัปโหลดไฟล์และบันทึกข้อมูล
-                            กรุณารอสักครู่...</div>
+                        <ul class="checklist">
+                            <li>หัวข้อของไฟล์ตรงกับหัวข้อสัมมนาที่ลงทะเบียนไว้</li>
+                            <li>ต้องเปิดดูได้โดยไม่ต้องขอสิทธิ์</li>
+                            <li>ตรวจชื่อ-รหัสนักศึกษาในหน้าแรกของสไลด์</li>
+                        </ul>
 
-                        <div class="form-actions" style="margin-top: 1.5rem;">
-                            <button type="submit" id="btnSubmitWork" class="btn-save"
-                                style="width: 100%; justify-content: center; background: var(--green-primary);">
+                        <div class="submit-bar">
+                            <button type="submit" id="btnSubmitWork" class="btn">
                                 <i class="fa-solid fa-paper-plane"></i> ส่งงาน
                             </button>
                         </div>
                     </form>
                 </div>
-            </div>
+
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button id="btnStudentLogout" class="logout-link"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
+                </div>
+            </section>
         </div>
     </main>
 
+    <footer class="site-foot">หากเข้าสู่ระบบไม่ได้หรือสถานะไม่ถูกต้อง กรุณาติดต่อผู้ดูแลระบบ</footer>
+
     <script>
-        // Target Date: 15 October 2026, 00:00:00 
-        // Note: Months in JS Date are 0-indexed, so 9 is October
+        // เปิดระบบ 15 ตุลาคม 2569 00:00 (เดือนใน JS เริ่มที่ 0)
         const targetDate = new Date(2026, 9, 15, 0, 0, 0).getTime();
+        const pad = n => String(n).padStart(2, '0');
 
         const updateCountdown = () => {
-            const now = new Date().getTime();
-            const distance = targetDate - now;
-
+            const distance = targetDate - Date.now();
             if (distance < 0) {
-                // Time has passed, hide countdown and show the submission app
                 document.getElementById('countdownView').style.display = 'none';
                 document.getElementById('submissionApp').style.display = 'block';
                 return;
             }
-
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            document.getElementById('days').innerText = days.toString().padStart(2, '0');
-            document.getElementById('hours').innerText = hours.toString().padStart(2, '0');
-            document.getElementById('minutes').innerText = minutes.toString().padStart(2, '0');
-            document.getElementById('seconds').innerText = seconds.toString().padStart(2, '0');
+            document.getElementById('days').innerText = pad(Math.floor(distance / 864e5));
+            document.getElementById('hours').innerText = pad(Math.floor(distance % 864e5 / 36e5));
+            document.getElementById('minutes').innerText = pad(Math.floor(distance % 36e5 / 6e4));
+            document.getElementById('seconds').innerText = pad(Math.floor(distance % 6e4 / 1e3));
         };
-
-        // Initialize Countdown Interval
         setInterval(updateCountdown, 1000);
         updateCountdown();
+
+        // Drag & drop + keyboard สำหรับกล่องอัปโหลด
+        const dz = document.getElementById('dropZone');
+        const fileInput = document.getElementById('pdfUpload');
+        ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+        ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+        dz.addEventListener('drop', e => {
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+        dz.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+        fileInput.addEventListener('click', e => e.stopPropagation());
     </script>
-    <!-- Load module script -->
     <script type="module" src="submission-app.js"></script>
 </body>
 

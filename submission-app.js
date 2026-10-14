@@ -5,6 +5,10 @@ import { getFirestore, doc, getDoc, updateDoc, deleteField, collection, getDocs 
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+// 'student' (submission.html) หรือ 'admin' (หน้าผู้ดูแล) กำหนดจาก <body data-mode="...">
+const PAGE_MODE = document.body.dataset.mode === 'admin' ? 'admin' : 'student';
+const show = (id, display) => { const el = document.getElementById(id); if (el) el.style.display = display; };
+
 let db = null;
 let storage = null;
 let auth = null;
@@ -62,11 +66,6 @@ function setupEvents() {
         });
     });
 
-    document.getElementById('btnToggleAdminLogin')?.addEventListener('click', () => {
-        const form = document.getElementById('adminLoginForm');
-        form.style.display = form.style.display === 'none' ? 'block' : 'none';
-    });
-
     document.getElementById('adminLoginForm')?.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = document.getElementById('adminEmail').value.trim();
@@ -89,41 +88,45 @@ function setupEvents() {
     if (auth) {
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const email = user.email;
-                // ตรวจสอบโดเมน (กันพลาดกรณี provider.setCustomParameters ไม่ทำงาน)
-                if (!email.endsWith('@kmitl.ac.th')) {
-                    alert("กรุณาเข้าสู่ระบบด้วยอีเมลสถาบัน (@kmitl.ac.th) เท่านั้น");
-                    await signOut(auth);
+                const isPasswordUser = user.providerData.some(p => p.providerId === 'password');
+
+                if (PAGE_MODE === 'admin') {
+                    // หน้าผู้ดูแล: รับเฉพาะบัญชีอีเมล/รหัสผ่านที่สร้างใน Firebase Authentication
+                    if (!isPasswordUser) {
+                        alert("บัญชีนี้ไม่มีสิทธิ์ผู้ดูแลระบบ");
+                        await signOut(auth);
+                        return;
+                    }
+                    isAdmin = true;
+                    show('loginSection', 'none');
+                    show('adminSearchSection', 'block');
+                    show('adminDashboardSection', 'block');
+                    loadAdminDashboard();
                     return;
                 }
 
-                // แยกรหัสนักศึกษาออกจากอีเมล (เช็กว่าขึ้นต้นด้วยตัวเลข 8 หลัก)
-                const match = email.match(/^(\d{8})@kmitl\.ac\.th$/);
-                if (match) {
-                    isAdmin = false;
-                    const studentId = match[1];
-                    document.getElementById('loginSection').style.display = 'none';
-                    document.getElementById('adminSearchSection').style.display = 'none';
-                    await findStudent(studentId); // ค้นหาข้อมูลตัวเองอัตโนมัติ
-                } else {
-                    // ถ้าไม่มีตัวเลข 8 หลัก ให้ถือว่าเป็น Admin (อาจารย์/เจ้าหน้าที่)
-                    isAdmin = true;
-                    document.getElementById('loginSection').style.display = 'none';
-                    document.getElementById('adminSearchSection').style.display = 'block';
-                    document.getElementById('adminDashboardSection').style.display = 'block';
-                    loadAdminDashboard();
+                // หน้านักศึกษา: ต้องเป็น Google @kmitl.ac.th ที่เป็นรหัส 8 หลักเท่านั้น
+                const match = !isPasswordUser && (user.email || '').match(/^(\d{8})@kmitl\.ac\.th$/);
+                if (!match) {
+                    alert("กรุณาเข้าสู่ระบบด้วยอีเมลนักศึกษา (รหัส 8 หลัก@kmitl.ac.th) เท่านั้น");
+                    await signOut(auth);
+                    return;
                 }
+                isAdmin = false;
+                show('loginSection', 'none');
+                await findStudent(match[1]); // ค้นหาข้อมูลตัวเองอัตโนมัติ
             } else {
                 // Not logged in
-                document.getElementById('loginSection').style.display = 'block';
-                document.getElementById('adminSearchSection').style.display = 'none';
-                document.getElementById('submitResultCard').style.display = 'none';
+                show('loginSection', 'block');
+                show('adminSearchSection', 'none');
+                show('adminDashboardSection', 'none');
+                show('submitResultCard', 'none');
             }
         });
     }
 
     // ---------------- Form Events ----------------
-    searchForm.addEventListener('submit', async (e) => {
+    searchForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = searchInput.value.trim();
         if (!id) return;
@@ -167,26 +170,47 @@ function setupEvents() {
     document.getElementById('btnRefreshDashboard')?.addEventListener('click', () => {
         loadAdminDashboard();
     });
+    document.getElementById('dashSearch')?.addEventListener('input', renderDashboard);
+    document.getElementById('dashFilter')?.addEventListener('change', renderDashboard);
+    document.getElementById('btnExportCsv')?.addEventListener('click', exportCsv);
+    document.getElementById('dashboardTableBody')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-review-id]');
+        if (btn) findStudent(btn.dataset.reviewId);
+    });
 
     document.getElementById('btnSaveEval')?.addEventListener('click', async () => {
         if (!currentStudent || !currentStudentId) return;
         const evalStatus = document.querySelector('input[name="evalStatusInput"]:checked')?.value;
         const evalFeedback = document.getElementById('evalFeedbackInput').value.trim();
 
-        if (!evalStatus) return alert("กรุณาเลือกสถานะการประเมิน (ผ่าน/ต้องแก้ไข)");
+        if (!evalStatus) return alert("กรุณาเลือกสถานะ (ผ่าน / ยังไม่ผ่าน / ยังไม่ได้ส่ง)");
+
+        const resetSubmission = evalStatus === 'notsubmitted';
+        if (resetSubmission && !confirm("การตั้งเป็น 'ยังไม่ได้ส่ง' จะล้างลิงก์/ไฟล์ที่นักศึกษาส่งไว้ ต้องการดำเนินการต่อหรือไม่?")) return;
 
         try {
             if (useFirebase && db) {
-                await updateDoc(doc(db, "students", currentStudentId), {
-                    evalStatus: evalStatus,
-                    evalFeedback: evalFeedback
-                });
+                const payload = { evalStatus, evalFeedback, evalUpdatedAt: new Date().toISOString() };
+                if (resetSubmission) {
+                    payload.submissionUrl = deleteField();
+                    payload.submissionType = deleteField();
+                    payload.submissionFileName = deleteField();
+                    payload.submittedAt = deleteField();
+                }
+                await updateDoc(doc(db, "students", currentStudentId), payload);
             } else {
                 const localData = JSON.parse(localStorage.getItem('seminar_students') || '[]');
                 const idx = localData.findIndex(s => s.id === currentStudentId);
                 if (idx > -1) {
                     localData[idx].evalStatus = evalStatus;
                     localData[idx].evalFeedback = evalFeedback;
+                    localData[idx].evalUpdatedAt = new Date().toISOString();
+                    if (resetSubmission) {
+                        delete localData[idx].submissionUrl;
+                        delete localData[idx].submissionType;
+                        delete localData[idx].submissionFileName;
+                        delete localData[idx].submittedAt;
+                    }
                     localStorage.setItem('seminar_students', JSON.stringify(localData));
                 }
             }
@@ -323,7 +347,39 @@ window.closeAdminModal = () => {
     if (overlay) overlay.style.display = 'none';
 };
 
+// ติดตามสถานะแบบขนส่ง: ส่งงานแล้ว → บันทึกเข้าระบบ → รอตรวจ → แจ้งผลตรวจ
+function updateTracker(student) {
+    const box = document.getElementById('trackBox');
+    if (!box) return; // หน้า Admin ไม่มีส่วนนี้
+
+    const submitted = !!student.submissionUrl;
+    box.style.display = submitted ? 'block' : 'none';
+    if (!submitted) return;
+
+    const evaluated = student.evalStatus === 'pass' || student.evalStatus === 'revise';
+    const stage = evaluated ? 4 : 3; // ขั้นปัจจุบัน (1-4); ขั้นที่ 1-2 เสร็จทันทีที่บันทึกลง Firestore สำเร็จ
+    const dateStr = student.submittedAt
+        ? new Date(student.submittedAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    const subs = [
+        dateStr,
+        'บันทึกเรียบร้อย',
+        evaluated ? 'ตรวจเสร็จแล้ว' : 'อยู่ระหว่างการตรวจ',
+        evaluated ? (student.evalStatus === 'pass' ? 'ผ่าน' : 'ต้องแก้ไข') : 'รอผู้ตรวจแจ้งผล'
+    ];
+
+    box.querySelectorAll('.t-step').forEach((el, i) => {
+        const n = i + 1;
+        el.style.setProperty('--n', i);
+        el.classList.toggle('done', n < stage || (n === 4 && evaluated));
+        el.classList.toggle('active', n === stage && !evaluated);
+        el.classList.toggle('warn', n === 4 && student.evalStatus === 'revise');
+        el.querySelector('.t-sub').textContent = subs[i];
+    });
+}
+
 function updateSubmissionUI(student) {
+    updateTracker(student);
+
     const statusBadge = document.getElementById('resSubmitStatusBadge');
     const submittedInfoBox = document.getElementById('submittedInfoBox');
     const submitFormSection = document.getElementById('submitFormSection');
@@ -341,7 +397,8 @@ function updateSubmissionUI(student) {
         document.getElementById('submittedTimeText').innerText = "ส่งเมื่อ: " + dateStr;
 
         const linkElem = document.getElementById('submittedLink');
-        linkElem.href = student.submissionUrl;
+        linkElem.href = safeUrl(student.submissionUrl);
+        linkElem.rel = "noopener noreferrer";
         linkElem.innerText = student.submissionType === 'file' ? `เปิดดูไฟล์ที่แนบ: ${student.submissionFileName}` : "คลิกดูลิงก์ที่ส่ง";
     } else {
         statusBadge.innerHTML = '<i class="fa-solid fa-file-circle-xmark"></i> ยังไม่ส่งงาน';
@@ -378,8 +435,12 @@ function updateSubmissionUI(student) {
                 evalStatusDisplay.innerHTML = '<span style="color: var(--green-primary);"><i class="fa-solid fa-check"></i> ผ่าน (Pass)</span>';
                 evalDisplayBox.style.borderLeftColor = 'var(--green-primary)';
                 evalDisplayBox.style.background = '#f0fdf4';
+            } else if (student.evalStatus === 'notsubmitted') {
+                evalStatusDisplay.innerHTML = '<span style="color: var(--text-muted);"><i class="fa-solid fa-file-circle-xmark"></i> ยังไม่ได้ส่ง <br>(ผู้ตรวจยกเลิกการส่งให้ กรุณาส่งงานใหม่)</span>';
+                evalDisplayBox.style.borderLeftColor = '#94a3b8';
+                evalDisplayBox.style.background = '#f1f5f9';
             } else {
-                evalStatusDisplay.innerHTML = '<span style="color: var(--error-red, #ef4444);"><i class="fa-solid fa-xmark"></i> ต้องแก้ไข (Revise)</span>';
+                evalStatusDisplay.innerHTML = '<span style="color: var(--error-red, #ef4444);"><i class="fa-solid fa-xmark"></i> ยังไม่ผ่าน (ต้องแก้ไข)</span>';
                 evalDisplayBox.style.borderLeftColor = '#ef4444';
                 evalDisplayBox.style.background = '#fef2f2';
             }
@@ -458,7 +519,7 @@ async function handleSubmission(e) {
                 reader.readAsDataURL(file);
             });
 
-            progressText.innerText = "กำลังส่งข้อมูลไปยัง Google Drive...";
+            progressText.innerText = "กำลังอัปโหลด รอสักครู่...";
             progressBar.style.width = "10%";
             progressPercent.innerText = "10%";
 
@@ -524,10 +585,15 @@ async function handleSubmission(e) {
         submittedAt: new Date().toISOString()
     };
 
+    // ส่งใหม่หลังถูกรีเซ็ต -> เคลียร์สถานะ "ยังไม่ได้ส่ง" ออก
+    const clearReset = currentStudent.evalStatus === 'notsubmitted';
+
     // Save to Firestore (or Local)
     if (useFirebase && db) {
         try {
-            await updateDoc(doc(db, "students", currentStudentId), submitData);
+            await updateDoc(doc(db, "students", currentStudentId),
+                clearReset ? { ...submitData, evalStatus: deleteField(), evalFeedback: deleteField() } : submitData);
+            if (clearReset) { delete currentStudent.evalStatus; delete currentStudent.evalFeedback; }
         } catch (err) {
             console.error(err);
             alert("บันทึกข้อมูลสถานะการส่งงานล้มเหลว");
@@ -573,6 +639,72 @@ async function loadAdminDashboard() {
 
     // เรียงตามรหัสนักศึกษา
     allStudents.sort((a, b) => a.id.localeCompare(b.id));
+    dashboardData = allStudents;
+    renderDashboard();
+}
+
+// ---------- Dashboard helpers ----------
+let dashboardData = [];
+
+function escapeHtml(v) {
+    return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// อนุญาตเฉพาะ http/https กัน javascript: URL
+function safeUrl(u) {
+    try {
+        const p = new URL(u);
+        return (p.protocol === 'https:' || p.protocol === 'http:') ? p.href : '#';
+    } catch { return '#'; }
+}
+
+function getStatusKey(st) {
+    if (st.evalStatus === 'pass') return 'pass';
+    if (st.evalStatus === 'revise') return 'revise';
+    if (!st.submissionUrl || st.evalStatus === 'notsubmitted') return 'notsubmitted';
+    return 'pending';
+}
+
+const STATUS_LABEL = { pass: 'ผ่าน', revise: 'ยังไม่ผ่าน', notsubmitted: 'ยังไม่ได้ส่ง', pending: 'รอตรวจ' };
+
+function getFilteredStudents() {
+    const q = (document.getElementById('dashSearch')?.value || '').trim().toLowerCase();
+    const f = document.getElementById('dashFilter')?.value || 'all';
+    return dashboardData.filter(st => {
+        if (f !== 'all' && getStatusKey(st) !== f) return false;
+        return !q || st.id.toLowerCase().includes(q) || (st.name || '').toLowerCase().includes(q);
+    });
+}
+
+function exportCsv() {
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = [['รหัส', 'ชื่อ', 'สถานะ', 'ลิงก์งาน', 'เวลาส่ง', 'Feedback']];
+    getFilteredStudents().forEach(st => rows.push([
+        st.id, st.name || '', STATUS_LABEL[getStatusKey(st)], st.submissionUrl || '',
+        st.submittedAt ? new Date(st.submittedAt).toLocaleString('th-TH') : '', st.evalFeedback || ''
+    ]));
+    // กัน CSV injection ใน Excel: ค่าที่ขึ้นต้นด้วย = + - @ ให้นำหน้าด้วย '
+    const csv = '﻿' + rows.map(r => r.map(c => q(/^[=+\-@]/.test(String(c)) ? "'" + c : c)).join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `submissions_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function renderDashboard() {
+    const tbody = document.getElementById('dashboardTableBody');
+    if (!tbody) return;
+
+    const summary = document.getElementById('dashSummary');
+    if (summary) {
+        const counts = { pass: 0, revise: 0, notsubmitted: 0, pending: 0 };
+        dashboardData.forEach(st => counts[getStatusKey(st)]++);
+        summary.innerHTML = `<span><strong>ทั้งหมด ${dashboardData.length}</strong></span>` +
+            Object.keys(STATUS_LABEL).map(k => `<span>· ${STATUS_LABEL[k]} <strong>${counts[k]}</strong></span>`).join('');
+    }
+
+    const allStudents = getFilteredStudents();
 
     if (allStudents.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 1rem;">ไม่มีข้อมูลนักศึกษา</td></tr>';
@@ -585,12 +717,12 @@ async function loadAdminDashboard() {
         tr.style.borderBottom = "1px solid #e2e8f0";
 
         // รหัส/ชื่อ
-        const nameCell = `<div><strong>${st.id}</strong></div><div style="font-size: 0.85rem; color: var(--text-muted);">${st.name || 'ไม่มีชื่อ'}</div>`;
+        const nameCell = `<div><strong>${escapeHtml(st.id)}</strong></div><div style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(st.name || 'ไม่มีชื่อ')}</div>`;
 
         // การส่ง
         let submitCell = `<span style="color: var(--text-muted);"><i class="fa-solid fa-file-circle-xmark"></i> ยังไม่ส่ง</span>`;
         if (st.submissionUrl) {
-            submitCell = `<a href="${st.submissionUrl}" target="_blank" style="color: var(--accent-blue); font-weight: bold; text-decoration: none;"><i class="fa-solid fa-file-arrow-up"></i> ส่งแล้ว</a>`;
+            submitCell = `<a href="${escapeHtml(safeUrl(st.submissionUrl))}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-blue); font-weight: bold; text-decoration: none;"><i class="fa-solid fa-file-arrow-up"></i> ส่งแล้ว</a>`;
         }
 
         // เวลา
@@ -599,13 +731,14 @@ async function loadAdminDashboard() {
         // ผลตรวจ
         let evalCell = '-';
         if (st.evalStatus === 'pass') evalCell = `<span style="color: var(--green-primary); font-weight: bold;"><i class="fa-solid fa-check"></i> ผ่าน</span>`;
-        else if (st.evalStatus === 'revise') evalCell = `<span style="color: #ef4444; font-weight: bold;"><i class="fa-solid fa-xmark"></i> แก้ไข</span>`;
+        else if (st.evalStatus === 'revise') evalCell = `<span style="color: #ef4444; font-weight: bold;"><i class="fa-solid fa-xmark"></i> ยังไม่ผ่าน</span>`;
+        else if (st.evalStatus === 'notsubmitted') evalCell = `<span style="color: var(--text-muted); font-weight: bold;"><i class="fa-solid fa-rotate-left"></i> ยังไม่ได้ส่ง (รีเซ็ต)</span>`;
 
         // ปุ่มจัดการ (ตรวจงาน & ส่งอีเมล)
-        const emailLink = `mailto:${st.id}@kmitl.ac.th?subject=แจ้งผลการตรวจงานสัมมนา&body=เรียน ${st.name || 'นักศึกษา'},%0A%0A`;
+        const emailLink = escapeHtml(`mailto:${st.id}@kmitl.ac.th?subject=${encodeURIComponent('แจ้งผลการตรวจงานสัมมนา')}&body=${encodeURIComponent('เรียน ' + (st.name || 'นักศึกษา') + ',\n\n')}`);
         const actionCell = `
             <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                <button class="btn-edit" onclick="findStudent('${st.id}')" style="font-size: 0.8rem; padding: 4px 8px; background: var(--orange-primary); color: white;"><i class="fa-solid fa-magnifying-glass"></i> ตรวจงาน</button>
+                <button class="btn-edit" data-review-id="${escapeHtml(st.id)}" style="font-size: 0.8rem; padding: 4px 8px; background: var(--orange-primary); color: white;"><i class="fa-solid fa-magnifying-glass"></i> ตรวจงาน</button>
                 <a href="${emailLink}" class="btn-edit" style="font-size: 0.8rem; padding: 4px 8px; background: #3b82f6; color: white; text-decoration: none;"><i class="fa-solid fa-envelope"></i> เมล</a>
             </div>
         `;
