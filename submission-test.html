@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทดสอบระบบส่งงาน | Seminar Submission Test</title>
+    <link rel="stylesheet" href="seminar-topic-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Submission Specific Styles */
+        .submit-section {
+            background: var(--bg-surface-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border: 1px dashed var(--green-primary);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .file-upload-box {
+            border: 2px dashed #cbd5e1;
+            padding: 2rem;
+            text-align: center;
+            border-radius: var(--radius-md);
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-box:hover,
+        .file-upload-box.dragover {
+            border-color: var(--green-primary);
+            background: #f0fdf4;
+        }
+
+        .file-upload-box i {
+            font-size: 2.5rem;
+            color: var(--green-primary);
+            margin-bottom: 1rem;
+        }
+
+        #uploadStatus {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        #fileNameDisplay {
+            margin-top: 0.5rem;
+            font-weight: 600;
+            color: var(--green-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-container" style="justify-content: center;">
+            <div class="logo-group">
+                <div class="logo-icon"
+                    style="background: linear-gradient(135deg, var(--green-primary), var(--green-primary));">
+                    <i class="fa-solid fa-file-lines" style="color: white;"></i>
+                </div>
+                <div class="logo-text" style="text-align: center;">
+                    <h1>ทดสอบระบบส่งงาน (Test Mode)</h1>
+                    <p>Seminar Submission System</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Login Section -->
+        <div id="loginSection" class="search-card" style="margin-top: 1rem; text-align: center;">
+            <h2><i class="fa-solid fa-lock" style="color: var(--green-primary);"></i> เข้าสู่ระบบเพื่อส่งงาน</h2>
+            <p>กรุณาเข้าสู่ระบบด้วยอีเมลสถาบัน (@kmitl.ac.th) เท่านั้น</p>
+            <button id="btnGoogleLogin" class="btn-save"
+                style="margin-top: 1rem; background: var(--green-primary); font-size: 1.1rem; padding: 0.8rem 1.5rem;">
+                <i class="fa-brands fa-google"></i> เข้าสู่ระบบนักศึกษา (Google)
+            </button>
+
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                <button id="btnToggleAdminLogin" class="btn-edit"
+                    style="background: transparent; color: var(--text-muted); font-size: 0.9rem;">
+                    <i class="fa-solid fa-user-shield"></i> เข้าสู่ระบบสำหรับผู้ดูแลระบบ
+                </button>
+                <form id="adminLoginForm"
+                    style="display: none; margin-top: 1rem; text-align: left; max-width: 300px; margin-left: auto; margin-right: auto; padding: 1rem; border: 1px dashed var(--orange-primary); border-radius: var(--radius-md);">
+                    <div class="form-group">
+                        <label>อีเมลผู้ดูแล</label>
+                        <input type="email" id="adminEmail" class="form-control" placeholder="admin@kmitl.ac.th"
+                            required>
+                    </div>
+                    <div class="form-group" style="margin-top: 0.8rem;">
+                        <label>รหัสผ่าน</label>
+                        <input type="password" id="adminPassword" class="form-control" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-save"
+                        style="width: 100%; margin-top: 1rem; background: var(--orange-primary);">
+                        <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบ Admin
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Admin Search Section (ซ่อนไว้ ให้เฉพาะ Admin เห็น) -->
+        <div class="search-card" id="adminSearchSection"
+            style="display: none; margin-top: 1rem; border-color: var(--orange-primary);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2><i class="fa-solid fa-user-shield" style="color: var(--orange-primary);"></i> ค้นหานักศึกษา
+                    (โหมดผู้ดูแล)</h2>
+                <button id="btnLogout" class="btn-edit"
+                    style="background: var(--bg-surface-subtle); color: var(--text-black-bold);"><i
+                        class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
+            </div>
+            <p>กรอกรหัสนักศึกษา 8 หลักเพื่อดูหรือส่งงานแทน (สำหรับ Admin)</p>
+            <form id="submitSearchForm">
+                <div class="search-input-box">
+                    <input type="text" id="searchInput" class="search-input"
+                        placeholder="กรอกรหัสนักศึกษา เช่น 65040425" maxlength="10" required>
+                    <button type="submit" class="search-btn" style="background: var(--orange-primary);">
+                        <i class="fa-solid fa-search"></i> ค้นหา
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Admin Dashboard Section -->
+        <div class="search-card" id="adminDashboardSection"
+            style="display: none; margin-top: 1.5rem; border-color: var(--orange-primary);">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                <h2><i class="fa-solid fa-chart-pie" style="color: var(--orange-primary);"></i> ภาพรวมการส่งงาน</h2>
+                <button id="btnRefreshDashboard" class="btn-edit" style="background: var(--bg-surface-subtle);"><i
+                        class="fa-solid fa-rotate-right"></i> รีเฟรชข้อมูล</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                    <thead>
+                        <tr style="background: var(--bg-surface-subtle); border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 0.75rem;">รหัส/ชื่อ</th>
+                            <th style="padding: 0.75rem;">การส่ง</th>
+                            <th style="padding: 0.75rem;">เวลา</th>
+                            <th style="padding: 0.75rem;">ผลตรวจ</th>
+                            <th style="padding: 0.75rem; text-align: right;">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboardTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 1rem;">กำลังโหลดข้อมูล...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Result Card for Submission -->
+        <div id="submitResultCard" class="result-card" style="display: none; margin-top: 1.5rem;">
+            <div class="result-header">
+                <div class="student-meta">
+                    <h3 id="resStudentName">นายศักย์พิสิฐ ชิณสีห์</h3>
+                    <div style="margin-top: 6px;">
+                        <span class="student-id-badge" id="resStudentID">65040425</span>
+                        <button id="btnStudentLogout" class="btn-edit"
+                            style="background: transparent; color: var(--text-muted); margin-left: 10px; font-size: 0.8rem; padding: 2px 5px;"><i
+                                class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
+                    </div>
+                </div>
+                <div id="resSubmitStatusBadge" class="status-badge pending"
+                    style="background: var(--bg-surface-subtle); color: var(--text-muted); border: 1px solid #cbd5e1;">
+                    <i class="fa-solid fa-file-circle-xmark"></i> ยังไม่ส่งงาน
+                </div>
+            </div>
+
+            <!-- Display already submitted info if exists -->
+            <div id="submittedInfoBox"
+                style="display: none; margin-top: 1.5rem; padding: 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md);">
+                <h4><i class="fa-solid fa-circle-check" style="color: var(--green-primary);"></i> ข้อมูลที่ส่งแล้ว</h4>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem;" id="submittedTimeText">ส่งเมื่อ: -</p>
+                <a href="#" target="_blank" id="submittedLink"
+                    style="display: inline-block; margin-top: 0.5rem; color: var(--accent-blue); font-weight: bold;"><i
+                        class="fa-solid fa-arrow-up-right-from-square"></i> ดูไฟล์/ลิงก์ที่ส่ง</a>
+                <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button type="button" class="btn-edit"
+                        onclick="document.getElementById('submitFormSection').style.display='block';"
+                        style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                        <i class="fa-solid fa-pen"></i> แก้ไข/ส่งงานใหม่
+                    </button>
+                    <button type="button" id="btnDeleteSubmission" class="btn-edit"
+                        style="font-size: 0.85rem; padding: 0.4rem 0.8rem; background: #ef4444; color: white; border: none;">
+                        <i class="fa-solid fa-trash"></i> ยกเลิกการส่งงาน
+                    </button>
+                </div>
+            </div>
+
+            <!-- Evaluation Display (For students & admins to see) -->
+            <div id="evalDisplayBox"
+                style="display: none; margin-top: 1.5rem; padding: 1rem; border-radius: var(--radius-md); border-left: 4px solid var(--orange-primary); background: #fff7ed;">
+                <h4><i class="fa-solid fa-comment-dots"></i> ผลการตรวจ</h4>
+                <div id="evalStatusDisplay" style="margin-top: 0.5rem; font-weight: bold;"></div>
+                <p id="evalFeedbackDisplay" style="margin-top: 0.5rem; font-size: 0.95rem; color: var(--text-muted);">
+                </p>
+            </div>
+
+            <!-- Admin Evaluation Edit Box (Only for admins) -->
+            <div id="adminEvalBox"
+                style="display: none; margin-top: 1.5rem; padding: 1rem; background: var(--bg-surface-subtle); border: 1px solid #cbd5e1; border-radius: var(--radius-md);">
+                <h4><i class="fa-solid fa-clipboard-check" style="color: var(--orange-primary);"></i> ส่วนสำหรับผู้ดูแล
+                    (ประเมินงาน)</h4>
+                <div class="radio-group" style="margin-top: 1rem;">
+                    <label class="radio-item"><input type="radio" name="evalStatusInput" value="pass"> ผ่าน</label>
+                    <label class="radio-item"><input type="radio" name="evalStatusInput" value="revise">
+                        ต้องแก้ไข</label>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>ข้อความระบุ (Feedback)</label>
+                    <textarea id="evalFeedbackInput" class="form-control" rows="2"
+                        placeholder="กรอกข้อความแจ้งนักศึกษา..."></textarea>
+                </div>
+                <button type="button" id="btnSaveEval" class="btn-save"
+                    style="margin-top: 1rem; background: var(--orange-primary);">
+                    <i class="fa-solid fa-save"></i> บันทึกผลการตรวจ
+                </button>
+            </div>
+
+            <div class="submit-section" id="submitFormSection">
+                <h4><i class="fa-solid fa-file-arrow-up"></i> เลือกช่องทางการส่งงาน</h4>
+
+                <form id="submissionForm">
+                    <div class="radio-group" style="margin-top: 1rem;">
+                        <label class="radio-item">
+                            <input type="radio" name="submitType" value="link" checked> แนบลิงก์ (URL)
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="submitType" value="file"> อัปโหลดไฟล์ PDF
+                        </label>
+                    </div>
+
+                    <!-- Link Form -->
+                    <div id="linkForm" style="display: block;">
+                        <div class="form-group">
+                            <label>วางลิงก์ผลงาน (เช่น Google Drive, Canva)</label>
+                            <input type="url" id="linkInput" class="form-control" placeholder="https://...">
+                        </div>
+                    </div>
+
+                    <!-- File Form -->
+                    <div id="fileForm" style="display: none;">
+                        <div class="form-group">
+                            <label>อัปโหลดไฟล์ (เฉพาะ .pdf ขนาดไม่เกิน 10MB)</label>
+                            <div class="file-upload-box" id="dropZone"
+                                onclick="document.getElementById('pdfUpload').click()">
+                                <i class="fa-regular fa-file-pdf"></i>
+                                <div>คลิกเพื่อเลือกไฟล์ PDF หรือลากไฟล์มาวางที่นี่</div>
+                                <div id="fileNameDisplay"></div>
+                                <input type="file" id="pdfUpload" accept=".pdf" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="uploadStatus" style="color: var(--orange-primary);"><i
+                            class="fa-solid fa-spinner fa-spin"></i> กำลังอัปโหลดไฟล์และบันทึกข้อมูล กรุณารอสักครู่...
+                    </div>
+
+                    <div class="form-actions" style="margin-top: 1.5rem;">
+                        <button type="submit" id="btnSubmitWork" class="btn-save"
+                            style="width: 100%; justify-content: center; background: var(--green-primary);">
+                            <i class="fa-solid fa-paper-plane"></i> ส่งงาน
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Load module script -->
+    <script type="module" src="submission-app.js"></script>
+</body>
+
+</html>
