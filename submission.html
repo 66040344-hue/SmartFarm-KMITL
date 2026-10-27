@@ -215,6 +215,14 @@
         .file-upload-box i { font-size: 2.2rem; color: var(--green-primary); margin-bottom: .4rem; }
         #fileNameDisplay { margin-top: .5rem; font-weight: 600; color: var(--green-dark); word-break: break-all; }
 
+        .otp-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: .3rem; }
+        .otp-box {
+            width: 100%; min-width: 0; aspect-ratio: 3 / 4; padding: 0; text-align: center;
+            font: inherit; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums;
+            border: 1.5px solid #cbd5e1; border-radius: 8px; background: #fff;
+        }
+        .otp-box:focus { border-color: var(--green-primary); }
+
         .checklist { margin: 1rem 0 0; padding: .8rem 1rem .8rem 2.2rem; background: #fffbeb; border-radius: 12px; font-size: .85rem; color: #78350f; }
         .checklist li { margin: .15rem 0; }
 
@@ -243,6 +251,14 @@
     </header>
 
     <main>
+        <!-- แจ้งเตือนเมื่อเปิดผ่านแอปไลน์ (Google ไม่อนุญาตให้ล็อกอินใน in-app browser) -->
+        <section id="lineWarning" class="card" style="display: none; border: 2px solid var(--orange-primary);">
+            <h2 style="color: var(--orange-primary);"><i class="fa-solid fa-triangle-exclamation"></i> ไม่สามารถใช้งานในแอปไลน์ได้</h2>
+            <p style="white-space: pre-line; margin: .5rem 0 0;">กรุณาเปิดด้วยเบราเซอร์อื่น โดยกดที่ 3 จุดขวาล่าง
+แล้วเลือกเปิดในเบราเซอร์อื่น
+(หรือตัวเลือกที่แสดงให้เห็นถึงการนำพาไปยังเบราเซอร์อื่น)</p>
+        </section>
+
         <!-- 1. Countdown (ก่อนเปิดระบบ) -->
         <section id="countdownView" class="card countdown">
             <h2>ระบบจะเปิดให้ส่งงาน</h2>
@@ -301,6 +317,8 @@
                     <a href="#" target="_blank" rel="noopener noreferrer" id="submittedLink">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i> ดูไฟล์/ลิงก์ที่ส่ง
                     </a>
+                    <a href="#" target="_blank" rel="noopener noreferrer" id="submittedFileLink"
+                        style="display: none; margin-top: .4rem; color: var(--accent-blue); font-weight: 600; word-break: break-all;"></a>
                     <div class="actions">
                         <button type="button" class="btn ghost small"
                             onclick="document.getElementById('submitFormSection').style.display='block'; this.blur(); document.getElementById('submitFormSection').scrollIntoView({behavior:'smooth'});">
@@ -324,12 +342,9 @@
                     <h3><i class="fa-solid fa-file-arrow-up" style="color: var(--green-primary);"></i> ส่งไฟล์นำเสนอ</h3>
 
                     <form id="submissionForm">
-                        <div class="seg" role="radiogroup" aria-label="ช่องทางการส่งงาน">
-                            <label><input type="radio" name="submitType" value="link" checked><span><i class="fa-solid fa-link"></i> แนบลิงก์</span></label>
-                            <label><input type="radio" name="submitType" value="file"><span><i class="fa-regular fa-file-pdf"></i> อัปโหลด PDF</span></label>
-                        </div>
+                        <p class="muted" style="margin: .75rem 0 0;">แนบได้ทั้งลิงก์และไฟล์ PDF (ต้องแนบอย่างน้อย 1 อย่าง)</p>
 
-                        <div id="linkForm" class="field">
+                        <div id="linkForm" class="field" style="margin-top: 1rem;">
                             <label for="linkInput">ลิงก์ไฟล์นำเสนอ</label>
                             <input type="url" id="linkInput" class="form-control" inputmode="url" autocomplete="off"
                                 placeholder="https://drive.google.com/...">
@@ -337,8 +352,8 @@
                                 <strong>"ทุกคนที่มีลิงก์สามารถดูได้"</strong></p>
                         </div>
 
-                        <div id="fileForm" class="field" style="display: none;">
-                            <label>ไฟล์ PDF (ไม่เกิน 10 MB)</label>
+                        <div id="fileForm" class="field" style="margin-top: 1.25rem;">
+                            <label>ไฟล์ PDF (ไม่เกิน 20 MB)</label>
                             <div class="file-upload-box" id="dropZone" role="button" tabindex="0"
                                 onclick="document.getElementById('pdfUpload').click()">
                                 <i class="fa-regular fa-file-pdf"></i>
@@ -349,12 +364,28 @@
                             </div>
                         </div>
 
-                        <div id="uploadStatus" style="display: none; margin-top: 1rem; color: var(--green-primary);" aria-live="polite"></div>
+                        <div class="field" style="margin-top: 1.25rem;">
+                            <label for="otp0">เบอร์โทรศัพท์ (10 หลัก)</label>
+                            <div class="otp-row" role="group" aria-label="เบอร์โทรศัพท์ 10 หลัก">
+                                <input id="otp0" class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="tel-national" aria-label="หลักที่ 1">
+                                <input class="otp-box" type="text" inputmode="numeric" maxlength="1" aria-label="หลักที่ 2">
+                                <input class="otp-box" type="text" inputmode="numeric" maxlength="1" aria-label="หลักที่ 3">
+                                <input class="otp-box" type="text" inputmode="numeric" maxlength="1" aria-label="หลักที่ 4">
+                                <input class="otp-box" type="text" inputmode="numeric" maxlength="1" aria-label="หลักที่ 5">
+                                <input class="otp-box" type="text" inputmode="numeric" maxlength="1" aria-label="หลักที่ 6">
+                                <input class="otp-box" type="text" inputmode="numeric" maxlength="1" aria-label="หลักที่ 7">
+                                <input class="otp-box" type="text" inputmode="numeric" maxlength="1" aria-label="หลักที่ 8">
+                                <input class="otp-box" type="text" inputmode="numeric" maxlength="1" aria-label="หลักที่ 9">
+                                <input class="otp-box" type="text" inputmode="numeric" maxlength="1" aria-label="หลักที่ 10">
+                            </div>
+                        </div>
+
+                        <div id="uploadStatus"style="display: none; margin-top: 1rem; color: var(--green-primary);" aria-live="polite"></div>
 
                         <ul class="checklist">
-                            <li>หัวข้อของไฟล์ตรงกับหัวข้อสัมมนาที่ลงทะเบียนไว้</li>
-                            <li>ต้องเปิดดูได้โดยไม่ต้องขอสิทธิ์</li>
-                            <li>ตรวจชื่อ-รหัสนักศึกษาในหน้าแรกของสไลด์</li>
+                            <li>ชื่อไฟล์ตรงกับหัวข้อสัมมนา</li>
+                            <li>ลิงก์ต้องเปิดดูได้โดยไม่ต้องขอสิทธิ์</li>
+                            <li>ตรวจสอบ ชื่อ-นามสกุล รหัสนักศึกษาในหน้าแรกของสไลด์</li>
                         </ul>
 
                         <div class="submit-bar">
@@ -379,8 +410,17 @@
         const targetDate = new Date(2026, 9, 15, 0, 0, 0).getTime();
         const pad = n => String(n).padStart(2, '0');
 
+        // ตรวจจับเบราว์เซอร์ในแอปไลน์
+        const inLine = /\bLine\//i.test(navigator.userAgent);
+        if (inLine) document.getElementById('lineWarning').style.display = 'block';
+
         const updateCountdown = () => {
             const distance = targetDate - Date.now();
+            if (inLine) {
+                document.getElementById('countdownView').style.display = 'none';
+                document.getElementById('submissionApp').style.display = 'none';
+                return;
+            }
             if (distance < 0) {
                 document.getElementById('countdownView').style.display = 'none';
                 document.getElementById('submissionApp').style.display = 'block';
