@@ -13,7 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
     getFirestore, doc, getDoc, getDocs, setDoc, collection, query, where,
-    writeBatch, onSnapshot, serverTimestamp, deleteDoc
+    writeBatch, onSnapshot, serverTimestamp, deleteDoc, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { firebaseConfig } from "./seminar-firebase-config.js";
 import { SEMINAR } from "./seminar-eval-data.js";
@@ -92,7 +92,7 @@ function criteriaOf(main) {
     const src = Array.isArray(main.criteria) && main.criteria.length ? main.criteria : SEMINAR.criteria;
     return src.map(s => ({
         id: s.id, name: s.name,
-        items: s.items.map(i => ({ id: i.id, max: i.max, text: i.text })),
+        items: s.items.map(i => ({ id: i.id, max: i.max, text: i.text, detail: i.detail || "" })),
         max: s.items.reduce((a, i) => a + i.max, 0)
     }));
 }
@@ -131,7 +131,7 @@ export const API = {
         return {
             title: SEMINAR.title, venue: SEMINAR.venue, domain: DOMAIN,
             criteria: criteriaOf(main), days: SEMINAR.days, students: SEMINAR.students,
-            locked, teachers
+            locked, teachers, liveFrom: main.liveFrom && main.liveFrom.toMillis ? main.liveFrom.toMillis() : null
         };
     }),
 
@@ -170,6 +170,48 @@ export const API = {
         if (!u.superAdmin) fail("เฉพาะบัญชีทดลองของผู้ดูแลถาวรเท่านั้นที่ลบคะแนนได้");
         await deleteDoc(doc(db, "evalScores", `${sid}__${u.email}`));
         return true;
+    }),
+
+    // ผู้ดูแลถาวรเท่านั้น: ลบคะแนนทุกใบที่บันทึกก่อนเวลา beforeMs (ใช้ล้างคะแนนที่กรรมการลองก่อนวันจริง) — rules บังคับซ้ำ
+    purgeScoresBefore: beforeMs => guard(async () => {
+        const u = needUser();
+        if (!u.superAdmin) fail("เฉพาะผู้ดูแลถาวรเท่านั้นที่ล้างคะแนนได้");
+        if (!(beforeMs > 0)) fail("เวลาไม่ถูกต้อง");
+        const docs = (await getDocs(collection(db, "evalScores"))).docs.filter(d => {
+            const t = d.data().updatedAt;
+            return t && t.toMillis && t.toMillis() < beforeMs;
+        });
+        for (let i = 0; i < docs.length; i += 400) {
+            const b = writeBatch(db);
+            docs.slice(i, i + 400).forEach(d => b.delete(d.ref));
+            await b.commit();
+        }
+        return docs.length;
+    }),
+
+    // ผู้ดูแล: ตั้งเวลาเริ่มนับคะแนนจริง (null = ยกเลิก) — คะแนนที่บันทึกก่อนเวลานี้ไม่ถูกนับ และถูกลบอัตโนมัติเมื่อถึงเวลา
+    setLiveFrom: ms => guard(async () => {
+        const u = needUser(); needAdmin();
+        await setDoc(doc(db, "evalConfig", "main"),
+            { liveFrom: ms ? Timestamp.fromMillis(ms) : null, updatedAt: serverTimestamp(), updatedBy: u.email },
+            { mergeFields: ["liveFrom", "updatedAt", "updatedBy"] });
+        return ms || null;
+    }),
+
+    // ลบใบประเมินที่บันทึกก่อน liveFrom (เรียกเองตอนเปิดหน้าเมื่อถึงเวลาแล้ว) — ผู้ดูแลลบได้ทุกใบ อาจารย์ลบได้เฉพาะของตัวเอง
+    // ไม่คืน error: ถ้าลบไม่ได้ (เช่น นาฬิกาเครื่องไม่ตรงเซิร์ฟเวอร์) ลองใหม่ตอนเปิดครั้งหน้า
+    purgeStale: liveFrom => guard(async () => {
+        const u = needUser();
+        if (!liveFrom || Date.now() < liveFrom) return 0;
+        const qs = isAdmin(u) ? await getDocs(collection(db, "evalScores"))
+            : await getDocs(query(collection(db, "evalScores"), where("email", "==", u.email)));
+        const old = qs.docs.filter(d => { const t = d.data().updatedAt; return t && t.toMillis && t.toMillis() < liveFrom; });
+        for (let i = 0; i < old.length; i += 400) {
+            const b = writeBatch(db);
+            old.slice(i, i + 400).forEach(d => b.delete(d.ref));
+            await b.commit();
+        }
+        return old.length;
     }),
 
     getAllScores: () => guard(async () => {
@@ -246,7 +288,7 @@ export const API = {
                     kept.add(id);
                 }
                 used.add(id); count++;
-                return { id, max, text };
+                return { id, max, text, detail: String(i.detail || "").trim().slice(0, 1000) };
             });
             return { id: "s" + (si + 1), name, items };
         });

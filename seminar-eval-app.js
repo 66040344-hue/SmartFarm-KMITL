@@ -37,6 +37,12 @@ function errMsg(e) {
     console.error(e); return "เกิดข้อผิดพลาด ลองใหม่อีกครั้ง";
 }
 
+// เวลาเริ่มนับคะแนนจริง (ผู้ดูแลตั้ง): ถึงเวลาแล้ว ใบที่บันทึกก่อนหน้าไม่ถูกนับและถูกลบอัตโนมัติ
+// ก่อนถึงเวลา นับทุกใบ เพื่อให้ผู้ดูแลเห็นผลระหว่างกรรมการทดสอบ
+const isLive = () => !!(S.cfg && S.cfg.liveFrom && now().getTime() >= S.cfg.liveFrom);
+const counted = r => !isLive() || new Date(r.updatedAt).getTime() >= S.cfg.liveFrom;
+function applyLive() { if (S.raw) S.all = S.raw.filter(counted); }
+
 function isNow(st) {
     const d = now();
     if (isoDay(d) !== st.date) return false;
@@ -67,6 +73,10 @@ async function boot() {
         S.cfg = await API.getConfig();
         S.mine = canGrade(S.user) ? await API.getMyScores() : {};
     } catch (e) { return renderLogin(errMsg(e)); }
+    if (isLive()) {
+        S.mine = Object.fromEntries(Object.entries(S.mine).filter(([, r]) => counted(r)));
+        API.purgeStale(S.cfg.liveFrom).catch(() => { });          // ลบใบทดสอบเก่าของตัวเองเงียบ ๆ
+    }
     const today = isoDay(now());
     S.day = S.day || (S.cfg.days.find(d => d.date === today) || S.cfg.days[0]).date;
     route();
@@ -85,7 +95,7 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 
-function stopWatch() { if (S.unwatch) { S.unwatch(); S.unwatch = null; } S.all = null; }
+function stopWatch() { if (S.unwatch) { S.unwatch(); S.unwatch = null; } S.all = null; S.raw = null; }
 
 function shell(inner, mode) {
     const u = S.user;
@@ -168,7 +178,7 @@ function fillList() {
         (!q || (s.name + " " + s.sid + " " + s.topic).toLowerCase().includes(q)));
     document.getElementById("slist").innerHTML = ss.length ? ss.map(s => {
         const r = S.mine[s.sid], d = !r && getDraft(s.sid), live = isNow(s);
-        const st = r ? `<span class="score">${fmt(r.total)}</span><span class="pill ok">ส่งแล้ว</span>`
+        const st = r ? `<span class="pill ok">ส่งแล้ว</span>`
             : d ? `<span class="pill warn">ร่าง</span>` : `<span class="pill none">ยังไม่ประเมิน</span>`;
         return `<a class="srow ${r ? "done" : ""} ${live ? "now" : ""}" href="#/eval/${encodeURIComponent(s.sid)}">
           <div class="no">${s.no}</div>
@@ -186,6 +196,30 @@ function quickVals(max) {
 }
 function valid(v, max) { return v !== "" && v != null && !isNaN(v) && v >= 0 && v <= max && Math.round(v * 2) === v * 2; }
 
+// บทคัดย่อ: Apps Script (abstract-appsscript.gs) คืนรายชื่อไฟล์ในโฟลเดอร์ Drive เป็น { "<รหัสนักศึกษา>": fileId }
+// เปิดแท็บเปล่าก่อนรอข้อมูล (เบราว์เซอร์ไม่บล็อก pop-up เพราะอยู่ในจังหวะที่ผู้ใช้กด)
+let absMap = null;
+async function openAbstract(sid, btn) {
+    if (!SEMINAR.abstractApi) { toast("ยังไม่ได้ตั้งค่าที่อยู่ Apps Script บทคัดย่อ (abstractApi)", true); return; }
+    const w = window.open("", "_blank");
+    btn.disabled = true;
+    try {
+        if (!absMap) {
+            const r = await fetch(SEMINAR.abstractApi);
+            const j = await r.json();
+            if (!j.ok) throw new Error(j.error || "bad response");
+            absMap = j.files;
+        }
+        const id = absMap[sid];
+        if (!id) { if (w) w.close(); toast(`ไม่พบไฟล์บทคัดย่อ ${sid}.pdf ในโฟลเดอร์`, true); return; }
+        const url = `https://drive.google.com/file/d/${id}/view`;
+        if (w) w.location.href = url; else location.href = url;
+    } catch (e) {
+        console.error(e); if (w) w.close();
+        absMap = null; toast("โหลดรายชื่อบทคัดย่อไม่สำเร็จ ลองใหม่อีกครั้ง", true);
+    } finally { btn.disabled = false; }
+}
+
 function renderEval(sid) {
     const list = S.cfg.students;
     const st = list.find(s => s.sid === sid);
@@ -202,19 +236,27 @@ function renderEval(sid) {
 
     const secs = S.cfg.criteria.map((sec, i) => `
       <section class="sec">
-        <div class="sh"><b>ส่วนที่ ${i + 1} ${esc(sec.name)}</b><span class="sub" id="sub-${sec.id}">0</span><span class="cap">/${sec.max}</span></div>
+        <div class="sh"><b>ส่วนที่ ${i + 1} ${esc(sec.name)}</b></div>
         ${sec.items.map(it => `
           <div class="item">
-            <div class="tx"><span>${esc(it.text)}</span><span class="mx">${it.max}</span></div>
-            <div class="ctl" id="ctl-${it.id}">
-              <input type="range" min="0" max="${it.max}" step="0.5" data-id="${it.id}" aria-label="${esc(it.text)}" ${dis}>
-              <input class="num" type="number" inputmode="decimal" min="0" max="${it.max}" step="0.5" data-id="${it.id}" placeholder="–" ${dis}>
+            <div class="tx"><span>${esc(it.text)}</span></div>
+            <div class="ctl" id="ctl-${it.id}" data-lv="0">
+              <div class="lv" role="group" aria-label="${esc(it.text)}">${[1, 2, 3, 4, 5].map(n =>
+                  `<button type="button" data-id="${it.id}" data-lv="${n}" aria-label="ให้ ${n} จาก 5" ${dis}>${n}</button>`).join("")}</div>
+              <input class="num" type="text" inputmode="decimal" autocomplete="off" maxlength="4" data-id="${it.id}" placeholder="1-5" aria-label="กรอกคะแนน 1-5" ${dis}>
             </div>
-            ${locked ? "" : `<div class="quick">${quickVals(it.max).map(v => `<button type="button" data-id="${it.id}" data-v="${v}">${fmt(v)}</button>`).join("")}</div>`}
           </div>`).join("")}
       </section>`).join("");
 
-    shell(`<main class="wrap">
+    // แผงเกณฑ์ด้านซ้าย (แท็บเล็ต/คอมพิวเตอร์) — ผู้ดูแลกรอกรายละเอียดของแต่ละข้อได้
+    let k = 0;
+    const critPanel = `<aside class="crit"><h2>เกณฑ์การให้คะแนน</h2>
+      ${S.cfg.criteria.map((sec, i) => `<div class="cs"><div class="cst"><b>ส่วนที่ ${i + 1} ${esc(sec.name)}</b></div>
+        ${sec.items.map(it => `<div class="ci"><div class="ct"><span>${++k}. ${esc(it.text)}</span></div>
+          ${it.detail ? `<p class="cd">${esc(it.detail)}</p>` : ""}</div>`).join("")}</div>`).join("")}
+    </aside>`;
+
+    shell(`<main class="wrap evwrap">
       <div class="nav">
         <a class="btn sm" href="${home()}">← รายชื่อ</a>
         <span>
@@ -223,53 +265,66 @@ function renderEval(sid) {
         </span>
       </div>
       <div class="ehead">
-        <div class="nm">${st.no}. ${esc(st.name)}</div>
-        <div class="tp">${esc(st.topic)}</div>
-        <div class="meta">รหัส ${esc(st.sid)} · ${esc(st.time)} น. · อาจารย์ที่ปรึกษา ${esc(st.advisor)}</div>
+        <div class="eh-main">
+          <div class="nm">${st.no}. ${esc(st.name)}</div>
+          <div class="tp">${esc(st.topic)}</div>
+          <div class="meta">รหัส ${esc(st.sid)} · ${esc(st.time)} น. · อาจารย์ที่ปรึกษา ${esc(st.advisor)}</div>
+        </div>
+        <button type="button" class="abs-btn" id="abs">📄 ดูบทคัดย่อ</button>
       </div>
       ${pv ? `<div class="banner warn">โหมดดูตัวอย่าง — กรอกลองได้แต่ไม่มีการบันทึก</div>` : ""}
       ${locked ? `<div class="banner warn">ปิดรับคะแนนของวันนี้แล้ว — แสดงคะแนนที่บันทึกไว้</div>` : ""}
-      ${!locked && saved && draft ? `<div class="banner warn">มีการแก้ไขที่ยังไม่ได้บันทึก (คะแนนที่ส่งไว้: ${fmt(saved.total)})</div>` : ""}
-      ${secs}
-      <section class="sec"><div class="sh"><b>ข้อเสนอแนะ (ถ้ามี)</b></div>
-        <div class="item"><textarea id="cm" class="field" rows="3" maxlength="1000" placeholder="ความเห็นถึงนักศึกษา" ${dis}>${esc(comment)}</textarea></div></section>
-      ${S.user.superAdmin && saved ? `<div style="margin:12px 0"><button class="btn sm danger" id="delme">ลบคะแนนของฉัน (ทดลอง)</button></div>` : ""}
+      ${!locked && saved && draft ? `<div class="banner warn">มีการแก้ไขที่ยังไม่ได้บันทึก</div>` : ""}
+      <div class="evgrid">
+        ${critPanel}
+        <div class="evscore">
+          ${secs}
+          <section class="sec"><div class="sh"><b>ข้อเสนอแนะ (ถ้ามี)</b></div>
+            <div class="item"><textarea id="cm" class="field" rows="3" maxlength="1000" placeholder="ความเห็นถึงนักศึกษา" ${dis}>${esc(comment)}</textarea></div></section>
+          ${S.user.superAdmin && saved ? `<div style="margin:12px 0"><button class="btn sm danger" id="delme">ลบคะแนนของฉัน (ทดลอง)</button></div>` : ""}
+        </div>
+      </div>
       <div style="height:20px"></div>
     </main>
     <div class="sticky"><div class="in">
-      <div class="tot" id="tot">0<small> / ${fmt(fullMax())}</small></div>
+      <div class="tot" id="tot"></div>
       <div class="parts" id="parts"></div>
       ${locked ? "" : `<button class="btn primary" id="save" disabled>${pv ? "บันทึกไม่ได้ (ตัวอย่าง)" : "บันทึกคะแนน"}</button>`}
     </div></div>`, "grade");
 
-    const ranges = app.querySelectorAll("input[type=range]"), nums = app.querySelectorAll("input.num");
+    document.getElementById("abs").onclick = e => openAbstract(sid, e.currentTarget);
+    const nums = app.querySelectorAll("input.num");
     const byId = {}; items().forEach(it => byId[it.id] = it);
+    // ผู้ใช้เลือก/กรอกระดับ 1–5 (ทศนิยมได้) — เก็บเป็นคะแนนจริงตามคะแนนเต็มของข้อ ปัดครึ่งคะแนนตามที่ระบบกำหนด
+    const toPts = (it, lv) => Math.min(it.max, Math.round(it.max * lv / 5 * 2) / 2);
+    // ระดับที่ผู้ใช้เลือก/พิมพ์เก็บไว้แยก (lvl) เพื่อไม่ให้ค่าที่แสดงเพี้ยนตามการปัดคะแนนจริง
+    // ถ้าไม่มี (โหลดจากคะแนนที่บันทึก/ร่าง) คำนวณย้อนกลับแล้วปัดเป็นครึ่งระดับ
+    const lvl = {};
+    const toLv = (it, v) => lvl[it.id] != null ? lvl[it.id] : Math.min(5, Math.max(1, Math.round(v / it.max * 5 * 2) / 2));
 
     function paint(id) {
         const it = byId[id], v = vals[id], ok = valid(v, it.max);
-        const r = app.querySelector(`input[type=range][data-id="${id}"]`), n = app.querySelector(`input.num[data-id="${id}"]`);
-        r.value = ok ? v : 0;
-        if (document.activeElement !== n) n.value = v === "" || v == null ? "" : v;
+        const n = app.querySelector(`input.num[data-id="${id}"]`), lv = ok ? toLv(it, v) : 0;
+        if (document.activeElement !== n) n.value = ok ? String(lv) : "";
         n.classList.toggle("bad", v !== "" && v != null && !ok);
-        document.getElementById("ctl-" + id).classList.toggle("empty", !ok);
+        const ctl = document.getElementById("ctl-" + id), on = Math.round(lv);
+        ctl.dataset.lv = on;
+        ctl.querySelectorAll(".lv button").forEach(b => { const f = +b.dataset.lv <= on; b.classList.toggle("on", f); b.setAttribute("aria-pressed", f && +b.dataset.lv === on); });
     }
+    // ผู้ประเมินเห็นแค่ระดับ 1–5 และจำนวนข้อที่ให้แล้ว — คะแนนเต็มจริงของแต่ละข้อ (ตั้งในโหมดผู้ดูแล) ไม่แสดง
     function totals() {
-        let tot = 0, missing = 0;
-        S.cfg.criteria.forEach(sec => {
-            const s = secSum(sec, vals); tot += s;
-            document.getElementById("sub-" + sec.id).textContent = fmt(s);
-            sec.items.forEach(it => { if (!valid(vals[it.id], it.max)) missing++; });
-        });
-        document.getElementById("tot").innerHTML = `${fmt(tot)}<small> / ${fmt(fullMax())}</small>`;
-        document.getElementById("parts").innerHTML = missing
-            ? `ยังไม่ได้ให้คะแนน ${missing} ข้อ`
-            : S.cfg.criteria.map((sec, i) => `ส่วน ${i + 1}: ${fmt(secSum(sec, vals))}/${sec.max}`).join(" · ");
+        let missing = 0;
+        const all = items().length;
+        items().forEach(it => { if (!valid(vals[it.id], it.max)) missing++; });
+        document.getElementById("tot").innerHTML = `${all - missing}<small> / ${all} ข้อ</small>`;
+        document.getElementById("parts").innerHTML = missing ? `ยังไม่ได้ให้คะแนน ${missing} ข้อ` : "ให้คะแนนครบทุกข้อแล้ว";
         const btn = document.getElementById("save");
         if (btn) btn.disabled = pv || missing > 0;
         return missing;
     }
-    function changed(id, v) {
+    function changed(id, v, level) {
         vals[id] = v === "" ? "" : Number(v);
+        if (level == null) delete lvl[id]; else lvl[id] = level;
         paint(id); totals();
         setDraft(sid, { items: vals, comment });
     }
@@ -288,12 +343,20 @@ function renderEval(sid) {
     };
     if (locked) return;
 
-    ranges.forEach(r => r.addEventListener("input", () => changed(r.dataset.id, r.value)));
     nums.forEach(n => {
-        n.addEventListener("input", () => changed(n.dataset.id, n.value.trim()));
+        n.addEventListener("input", () => {
+            const raw = n.value.trim().replace(",", "."), lv = Number(raw), id = n.dataset.id;
+            if (raw === "") return changed(id, "");
+            if (isNaN(lv) || lv < 1 || lv > 5) { changed(id, ""); n.classList.add("bad"); return; }
+            changed(id, toPts(byId[id], lv), lv);
+        });
         n.addEventListener("blur", () => paint(n.dataset.id));
     });
-    app.querySelectorAll(".quick button").forEach(b => b.onclick = () => changed(b.dataset.id, b.dataset.v));
+    app.querySelectorAll(".lv button").forEach(b => b.onclick = () => {
+        // Safari ไม่ย้ายโฟกัสเมื่อกดปุ่ม — ปล่อยโฟกัสจากช่องกรอกก่อน ไม่งั้นช่องจะไม่อัปเดต
+        if (document.activeElement && document.activeElement.classList.contains("num")) document.activeElement.blur();
+        changed(b.dataset.id, toPts(byId[b.dataset.id], +b.dataset.lv), +b.dataset.lv);
+    });
     const cm = document.getElementById("cm");
     cm.oninput = () => { comment = cm.value; setDraft(sid, { items: vals, comment }); };
 
@@ -305,7 +368,7 @@ function renderEval(sid) {
         try {
             S.mine[sid] = await API.saveScore(sid, vals, comment);
             dropDraft(sid);
-            toast(`บันทึกแล้ว ${st.name} — ${fmt(S.mine[sid].total)} คะแนน`);
+            toast(`บันทึกคะแนน ${st.name} แล้ว`);
             if (location.hash.startsWith("#/eval/" + encodeURIComponent(sid))) location.hash = "#/";
         } catch (err) {
             if (/ปิดรับ/.test(errMsg(err))) S.cfg.locked[st.date] = true;
@@ -320,8 +383,8 @@ function startWatch() {
     return new Promise((resolve, reject) => {
         S.unwatch = API.watchAllScores(list => {
             const first = S.all == null;
-            S.all = list;
-            if (first) resolve();
+            S.raw = list; applyLive();
+            if (first) { resolve(); if (isLive()) API.purgeStale(S.cfg.liveFrom).catch(() => { }); }
             else if (location.hash.startsWith("#/admin") && S.atab !== "users" && S.atab !== "criteria") renderAdminBody();
         }, err => { if (S.all == null) reject(err); else toast(errMsg(err), true); });
     });
@@ -388,6 +451,20 @@ function adminOverview(el) {
               <div class="bar"><i style="width:${list.length ? c / list.length * 100 : 0}%"></i></div></div>`;
         }).join("") || `<p class="muted">ยังไม่มีอาจารย์ผู้ประเมิน — เพิ่มได้ที่แท็บ “ผู้ใช้งาน”</p>`}
       </div></div>
+      <div class="card"><h2>เวลาเริ่มนับคะแนนจริง</h2>
+        <p class="small muted" style="margin-top:0">ตั้งไว้ล่วงหน้าได้ — เมื่อถึงเวลานี้ ใบประเมินที่บันทึก<b>ก่อนหน้า</b>จะไม่ถูกนับในผลสรุป/อันดับ/Excel และถูก<b>ลบอัตโนมัติ</b>
+          (ลบตอนมีคนเปิดหน้าเว็บนี้ ไม่ต้องกดเอง ลบแล้วกู้คืนไม่ได้) ใบที่บันทึกหลังเวลานี้ไม่ถูกแตะ · ก่อนถึงเวลา ทุกใบยังนับตามปกติเพื่อให้ดูผลทดสอบได้</p>
+        <div class="toolbar" style="margin:0">
+          <input type="datetime-local" class="btn sm" id="lft" value="${S.cfg.liveFrom ? esc(isoDay(new Date(S.cfg.liveFrom)) + "T" + p2(new Date(S.cfg.liveFrom).getHours()) + ":" + p2(new Date(S.cfg.liveFrom).getMinutes())) : esc(SEMINAR.days[0].date + "T00:00")}">
+          <span class="small" id="lfs">${S.cfg.liveFrom ? (isLive() ? "ถึงเวลาแล้ว — กำลังนับเฉพาะใบหลังเวลานี้" : "ตั้งไว้ — ยังไม่ถึงเวลา (นับทุกใบ)") : "ยังไม่ได้ตั้ง (นับทุกใบ)"}</span><span class="sp"></span>
+          ${S.cfg.liveFrom ? `<button class="btn sm" id="lfc">ยกเลิกการตั้ง</button>` : ""}
+          <button class="btn sm primary" id="lfb">บันทึกเวลา</button></div></div>
+      ${S.user.superAdmin ? `<div class="card"><h2>ล้างคะแนนทดสอบ</h2>
+        <p class="small muted" style="margin-top:0">ใช้หลังให้กรรมการลองระบบ — ลบใบประเมินทุกใบที่ <b>บันทึกก่อนเวลาที่เลือก</b> ส่วนที่บันทึกหลังจากนั้นไม่ถูกแตะ ลบแล้วกู้คืนไม่ได้ (เกณฑ์และผู้ใช้งานไม่ถูกลบ)</p>
+        <div class="toolbar" style="margin:0">
+          <input type="datetime-local" class="btn sm" id="pgt" value="${esc(S.purgeAt || SEMINAR.days[0].date + "T00:00")}">
+          <span class="small" id="pgn"></span><span class="sp"></span>
+          <button class="btn sm danger" id="pgb">ลบคะแนนก่อนเวลานี้</button></div></div>` : ""}
       <div class="card"><h2>เปิด/ปิดรับคะแนน</h2>
         ${S.cfg.days.map(d => {
             const lk = !!S.cfg.locked[d.date];
@@ -395,6 +472,37 @@ function adminOverview(el) {
               <button class="btn sm ${lk ? "" : "danger"}" data-lock="${d.date}" data-v="${lk ? 0 : 1}">${lk ? "เปิดรับอีกครั้ง" : "ปิดรับคะแนน"}</button></div>`;
         }).join("")}
       </div>`;
+    const setLive = async ms => {
+        try {
+            S.cfg.liveFrom = await API.setLiveFrom(ms); applyLive();
+            if (isLive()) API.purgeStale(S.cfg.liveFrom).catch(() => { });
+            toast(ms ? "ตั้งเวลาเริ่มนับคะแนนจริงแล้ว" : "ยกเลิกการตั้งเวลาแล้ว"); adminOverview(el);
+        } catch (err) { toast(errMsg(err), true); }
+    };
+    el.querySelector("#lfb").onclick = () => {
+        const ms = new Date(el.querySelector("#lft").value).getTime();
+        if (!(ms > 0)) return toast("กรุณาเลือกวันและเวลา", true);
+        const n = S.raw.filter(r => new Date(r.updatedAt).getTime() < ms).length;
+        if (ms <= now().getTime() && n && !confirm(`เวลานี้ผ่านไปแล้ว — ใบประเมิน ${n} ใบที่บันทึกก่อนหน้าจะถูกลบทันที กู้คืนไม่ได้ ยืนยัน?`)) return;
+        setLive(ms);
+    };
+    const lfc = el.querySelector("#lfc");
+    if (lfc) lfc.onclick = () => setLive(null);
+    const pgt = el.querySelector("#pgt");
+    if (pgt) {
+        const cnt = () => S.all.filter(r => new Date(r.updatedAt) < new Date(pgt.value)).length;
+        const show = () => { S.purgeAt = pgt.value; el.querySelector("#pgn").textContent = `จะลบ ${cnt()} จาก ${S.all.length} ใบ`; };
+        pgt.oninput = show; show();
+        el.querySelector("#pgb").onclick = async e => {
+            const n = cnt();
+            if (!pgt.value || !n) return toast("ไม่มีใบประเมินที่ตรงเงื่อนไข", true);
+            if (prompt(`จะลบใบประเมิน ${n} ใบที่บันทึกก่อน ${new Date(pgt.value).toLocaleString("th-TH")} ลบแล้วกู้คืนไม่ได้\nพิมพ์คำว่า ลบ เพื่อยืนยัน`) !== "ลบ") return;
+            const b = e.currentTarget; b.disabled = true;
+            try { toast(`ลบแล้ว ${await API.purgeScoresBefore(new Date(pgt.value).getTime())} ใบ`); }
+            catch (err) { toast(errMsg(err), true); }
+            b.disabled = false;
+        };
+    }
     el.querySelectorAll("[data-lock]").forEach(b => b.onclick = async () => {
         const lk = b.dataset.v === "1";
         if (lk && !confirm("ปิดรับคะแนนของวันนี้? อาจารย์จะแก้ไขคะแนนไม่ได้")) return;
@@ -806,25 +914,26 @@ function adminCriteria(el) {
     const total = C.reduce((a, s) => a + sec(s), 0), n = C.reduce((a, s) => a + s.items.length, 0);
     el.innerHTML = `<div class="card">
       <h2>เกณฑ์การประเมิน</h2>
-      <p class="small muted" style="margin-top:0">แก้ชื่อส่วน รายการประเมิน และคะแนนเต็มรายข้อได้ (เพิ่มทีละ 0.5, สูงสุด 20 ข้อ) · คะแนนเต็มของแต่ละส่วนคิดจากผลรวมของข้อในส่วนนั้น ·
+      <p class="small muted" style="margin-top:0">แก้ชื่อส่วน รายการประเมิน และ<b>คะแนนเต็มจริง</b>รายข้อได้ (เพิ่มทีละ 0.5, สูงสุด 20 ข้อ) · ผู้ประเมินเห็นแค่ระดับ 1–5 ส่วนระบบจะแปลงเป็นคะแนนจริง (ระดับ ÷ 5 × คะแนนเต็มจริง) ซึ่งผู้ประเมินไม่เห็น · คะแนนเต็มของแต่ละส่วนคิดจากผลรวมของข้อในส่วนนั้น ·
         มีผลกับอาจารย์ทันทีที่บันทึก <b>ควรแก้ก่อนเริ่มให้คะแนน</b> — ถ้าแก้หลังมีคะแนนแล้ว ใบประเมินเดิมจะถูกนับใหม่ตามเกณฑ์ปัจจุบัน (ข้อที่เพิ่มใหม่นับเป็น 0 จนกว่าอาจารย์จะบันทึกซ้ำ)</p>
       ${C.map((s, si) => `
         <section class="sec" style="margin:0 0 12px">
           <div class="sh"><b>ส่วนที่ ${si + 1}</b>
             <input data-s="${si}" data-k="name" value="${esc(s.name)}" placeholder="ชื่อส่วน" style="flex:1;min-width:0;margin:0 8px">
-            <span class="sub">${fmt(sec(s))}</span><span class="cap">คะแนน</span>
+            <span class="sub">${fmt(sec(s))}</span><span class="cap">คะแนนจริง</span>
             <button class="btn sm danger" data-dels="${si}" style="margin-left:8px">ลบส่วน</button></div>
           ${s.items.map((it, ii) => `
-            <div class="item" style="display:flex;gap:8px;align-items:flex-start">
+            <div class="item" style="display:flex;gap:8px;align-items:flex-start;border-bottom:0;padding-bottom:6px">
               <span class="muted" style="padding-top:8px">${ii + 1}.</span>
               <textarea class="field" rows="2" data-s="${si}" data-i="${ii}" data-k="text" placeholder="รายการประเมิน" style="flex:1;min-width:0">${esc(it.text)}</textarea>
-              <input class="num" type="number" inputmode="decimal" min="0.5" max="100" step="0.5" data-s="${si}" data-i="${ii}" data-k="max" value="${esc(it.max)}" style="width:72px" aria-label="คะแนนเต็ม">
+              <input class="num" type="number" inputmode="decimal" min="0.5" max="100" step="0.5" data-s="${si}" data-i="${ii}" data-k="max" value="${esc(it.max)}" style="width:72px" aria-label="คะแนนเต็มจริง" title="คะแนนเต็มจริงของข้อนี้ (ผู้ประเมินไม่เห็น)">
               <button class="btn sm danger" data-deli="${si}.${ii}" title="ลบข้อนี้">ลบ</button>
-            </div>`).join("")}
+            </div>
+            <div class="item" style="padding-top:0;border-top:0"><textarea class="field" rows="2" maxlength="1000" data-s="${si}" data-i="${ii}" data-k="detail" placeholder="รายละเอียดเกณฑ์ข้อ ${ii + 1} (แสดงในแผงเกณฑ์ฝั่งซ้ายของหน้ากรรมการ)" style="font-size:14px">${esc(it.detail || "")}</textarea></div>`).join("")}
           <div class="item"><button class="btn sm" data-addi="${si}">+ เพิ่มข้อ</button></div>
         </section>`).join("")}
       <div class="toolbar" style="margin:12px 0 0"><button class="btn sm" id="adds">+ เพิ่มส่วน</button>
-        <span class="small muted">${n} ข้อ · รวม <b>${fmt(total)}</b> คะแนน${total !== 100 ? " (ไม่เท่ากับ 100)" : ""}</span><span class="sp"></span>
+        <span class="small muted">${n} ข้อ · รวม <b>${fmt(total)}</b> คะแนน <span class="muted">(ใช้เป็นคะแนนเต็มในหน้าผลคะแนน อันดับ และ Excel)</span></span><span class="sp"></span>
         <button class="btn sm" id="undoc">ยกเลิกการแก้ไข</button><button class="btn sm primary" id="savec">บันทึกเกณฑ์</button></div>
     </div>`;
     // พิมพ์ได้ต่อเนื่อง: เก็บค่าลง state โดยไม่วาดหน้าใหม่ แล้วอัปเดตเฉพาะตัวเลขรวม
@@ -855,7 +964,7 @@ function adminCriteria(el) {
         const btn = e.currentTarget; btn.disabled = true;
         try {
             S.cfg.criteria = await API.saveCriteria(C.map(s => ({
-                name: s.name, items: s.items.map(i => ({ id: i.id, max: Number(i.max), text: i.text }))
+                name: s.name, items: s.items.map(i => ({ id: i.id, max: Number(i.max), text: i.text, detail: i.detail }))
             })));
             S.crit = null;
             toast("บันทึกเกณฑ์แล้ว"); adminCriteria(el);

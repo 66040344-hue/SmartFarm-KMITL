@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>นับถอยหลัง</title>
+<style>
+  :root {
+    --bg: #000;
+    --fg: #d6d2c8;        /* ขาวนวล ไม่แสบตา */
+    --muted: #6e6a62;
+    --panel: #0e0e0e;
+    --line: #232323;
+    --green: #1e8f52;
+    --yellow: #d9a91c;
+    --red: #b8342a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Segoe UI", "Noto Sans Thai", Tahoma, sans-serif;
+    transition: background-color .6s ease, color .6s ease;
+  }
+
+  /* ---------- หน้าตั้งค่า ---------- */
+  #setup { min-height: 100%; display: flex; justify-content: center; padding: 40px 16px; }
+  .panel { width: 100%; max-width: 640px; }
+  h1 { font-weight: 500; font-size: 22px; margin: 0 0 24px; letter-spacing: .5px; }
+  h2 { font-weight: 500; font-size: 15px; color: var(--muted); margin: 28px 0 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .time-input { display: inline-flex; align-items: center; gap: 4px; }
+  input[type=number] {
+    background: #000; color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 6px; width: 64px; text-align: center; font-size: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  input[type=number].small { width: 56px; font-size: 15px; padding: 6px 4px; }
+  input[type=number]:focus { outline: none; border-color: #555; }
+  .big input[type=number] { width: 90px; font-size: 32px; }
+  .colon { font-size: 20px; color: var(--muted); }
+  .big .colon { font-size: 32px; }
+  .alert-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+    padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .alert-row:last-child { border-bottom: 0; }
+  .lbl { color: var(--muted); font-size: 14px; }
+  .swatches { display: inline-flex; gap: 6px; }
+  .swatches label { cursor: pointer; }
+  .swatches input { display: none; }
+  .swatches span {
+    display: block; width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid transparent; opacity: .45; transition: .15s;
+  }
+  .swatches input:checked + span { opacity: 1; border-color: var(--fg); }
+  button {
+    background: #1a1a1a; color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 14px; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  button:hover { background: #242424; }
+  .del { margin-left: auto; color: #b88; padding: 6px 10px; }
+  .add { margin-top: 12px; }
+  .primary {
+    display: block; width: 100%; margin-top: 28px; padding: 14px; font-size: 17px;
+    background: var(--fg); color: #000; border: 0;
+  }
+  .primary:hover { background: #ece8de; }
+  .help { color: var(--muted); font-size: 13px; line-height: 1.8; margin-top: 20px; }
+  kbd { border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; font-size: 12px; background: #111; }
+  .check { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 14px; }
+
+  /* ---------- หน้าแสดงเวลา ---------- */
+  #display { display: none; position: fixed; inset: 0; cursor: none; user-select: none; }
+  body.show #display { display: block; }
+  body.show #setup { display: none; }
+  #clock {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: min(30vw, 60vh); font-weight: 300; line-height: 1;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  }
+  /* ตัวเลขของฟอนต์นั่งต่ำกว่ากึ่งกลางกล่อง ยกขึ้นให้อยู่กลางจอพอดี */
+  #clock span { display: inline-block; transform: translateY(-0.1em); }
+  #over {
+    position: absolute; left: 0; right: 0; bottom: 9vh; text-align: center;
+    font-size: min(5vw, 8vh); font-variant-numeric: tabular-nums; color: var(--muted);
+    opacity: 0; transition: opacity .6s;
+  }
+  #over.on { opacity: 1; }
+  #bar {
+    position: absolute; left: 0; bottom: 0; height: 4px; width: 100%;
+    background: var(--fg); opacity: .18; transform-origin: left center;
+  }
+  #hint {
+    position: absolute; left: 0; right: 0; top: 4vh; text-align: center;
+    font-size: 14px; color: #3a3833; transition: opacity .4s;
+  }
+  #toolbar { position: absolute; top: 12px; right: 12px; display: none; gap: 8px; cursor: default; }
+  body.show:not(.fs) #toolbar { display: flex; }
+  body.show:not(.fs) #display { cursor: default; }
+
+  /* สีเตือน */
+  body.a-green  { background: var(--green); }
+  body.a-yellow { background: var(--yellow); color: #111; }
+  body.a-red    { background: var(--red); }
+  body.a-yellow #over, body.a-yellow #hint { color: #3b3210; }
+  body.a-green #over, body.a-red #over { color: rgba(255,255,255,.6); }
+</style>
+</head>
+<body>
+
+<!-- ===== ตั้งค่า ===== -->
+<div id="setup">
+  <div class="panel">
+    <h1>ตั้งค่าเวลานับถอยหลัง</h1>
+
+    <div class="card big">
+      <span class="lbl" style="display:block;margin-bottom:10px">เวลานับถอยหลัง (นาที : วินาที)</span>
+      <span class="time-input">
+        <input type="number" id="tMin" min="0" max="999">
+        <span class="colon">:</span>
+        <input type="number" id="tSec" min="0" max="59">
+      </span>
+    </div>
+
+    <h2>การแจ้งเตือน (ไม่มีเสียง — จอเปลี่ยนสีค้างไว้)</h2>
+    <div class="card">
+      <div id="alerts"></div>
+      <button class="add" id="addAlert">+ เพิ่มการแจ้งเตือน</button>
+    </div>
+
+    <label class="check"><input type="checkbox" id="showBar"> แสดงแถบเวลาบาง ๆ ด้านล่างจอ</label>
+
+    <button class="primary" id="go">แสดงผลเต็มจอ</button>
+
+    <div class="help">
+      <kbd>Space</kbd> 1 ครั้ง = เริ่ม / เดินต่อ &nbsp;·&nbsp;
+      <kbd>Space</kbd> 2 ครั้งติดกัน = หยุด<br>
+      <kbd>R</kbd> = รีเซ็ตเวลา &nbsp;·&nbsp; <kbd>F</kbd> = เต็มจอ / ออก &nbsp;·&nbsp;
+      <kbd>Esc</kbd> = ออกจากเต็มจอ (เวลายังเดินอยู่)<br>
+      ค่าที่ตั้งไว้จะถูกจำอัตโนมัติ · ค้าง 0 วินาที = ค้างสีไว้จนถึงการเตือนถัดไป
+    </div>
+  </div>
+</div>
+
+<!-- ===== แสดงเวลา ===== -->
+<div id="display">
+  <div id="hint">กด Space เพื่อเริ่ม</div>
+  <div id="clock"><span id="clockText">15:00</span></div>
+  <div id="over"></div>
+  <div id="bar"></div>
+  <div id="toolbar">
+    <button id="btnFs">เต็มจอ</button>
+    <button id="btnBack">ตั้งค่า</button>
+  </div>
+</div>
+
+<template id="rowTpl">
+  <div class="alert-row">
+    <span class="lbl">เมื่อเหลือ</span>
+    <span class="time-input">
+      <input type="number" class="small aMin" min="0" max="999">
+      <span class="colon">:</span>
+      <input type="number" class="small aSec" min="0" max="59">
+    </span>
+    <span class="swatches">
+      <label><input type="radio" value="green"><span style="background:var(--green)"></span></label>
+      <label><input type="radio" value="yellow"><span style="background:var(--yellow)"></span></label>
+      <label><input type="radio" value="red"><span style="background:var(--red)"></span></label>
+    </span>
+    <span class="lbl">ค้าง</span>
+    <input type="number" class="small aHold" min="0" max="3600">
+    <span class="lbl">วินาที</span>
+    <button class="del" title="ลบ">✕</button>
+  </div>
+</template>
+
+<script>
+const KEY = 'countdown-timer-config-v1';
+const DEFAULT = {
+  min: 15, sec: 0, showBar: true,
+  alerts: [
+    { m: 5, s: 0, color: 'green',  hold: 5 },
+    { m: 3, s: 0, color: 'yellow', hold: 5 },
+    { m: 1, s: 0, color: 'red',    hold: 5 },
+  ],
+};
+
+const $ = id => document.getElementById(id);
+let cfg = load();
+let rowSeq = 0;
+
+function load() {
+  try {
+    const c = JSON.parse(localStorage.getItem(KEY));
+    if (c && Array.isArray(c.alerts)) return c;
+  } catch (e) {}
+  return structuredClone(DEFAULT);
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {}
+}
+const num = (v, max) => Math.min(max, Math.max(0, parseInt(v, 10) || 0));
+
+/* ---------- ฟอร์มตั้งค่า ---------- */
+function renderForm() {
+  $('tMin').value = cfg.min;
+  $('tSec').value = String(cfg.sec).padStart(2, '0');
+  $('showBar').checked = cfg.showBar;
+  $('alerts').innerHTML = '';
+  cfg.alerts.forEach(addRow);
+}
+function addRow(a) {
+  const row = $('rowTpl').content.firstElementChild.cloneNode(true);
+  const name = 'c' + (rowSeq++);
+  row.querySelector('.aMin').value = a.m;
+  row.querySelector('.aSec').value = String(a.s).padStart(2, '0');
+  row.querySelector('.aHold').value = a.hold;
+  row.querySelectorAll('input[type=radio]').forEach(r => {
+    r.name = name;
+    r.checked = r.value === a.color;
+  });
+  row.querySelector('.del').onclick = () => { row.remove(); readForm(); };
+  $('alerts').appendChild(row);
+}
+function readForm() {
+  cfg.min = num($('tMin').value, 999);
+  cfg.sec = num($('tSec').value, 59);
+  cfg.showBar = $('showBar').checked;
+  cfg.alerts = [...$('alerts').children].map(row => ({
+    m: num(row.querySelector('.aMin').value, 999),
+    s: num(row.querySelector('.aSec').value, 59),
+    color: (row.querySelector('input[type=radio]:checked') || {}).value || 'green',
+    hold: num(row.querySelector('.aHold').value, 3600),
+  }));
+  save();
+}
+$('setup').addEventListener('input', readForm);
+$('setup').addEventListener('change', readForm);
+$('addAlert').onclick = () => {
+  addRow({ m: 0, s: 30, color: 'red', hold: 5 });
+  readForm();
+};
+
+/* ---------- ตัวนับเวลา ---------- */
+let duration = 0, elapsedBefore = 0, startedAt = 0, running = false;
+let alerts = [], prevRemaining = Infinity, lastRunPress = 0, flashTimer = null;
+let shownMain = '', shownOver = '';
+
+function elapsed() {
+  return elapsedBefore + (running ? performance.now() - startedAt : 0);
+}
+function fmt(totalSec) {
+  const m = Math.floor(totalSec / 60), s = totalSec % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function reset() {
+  duration = (cfg.min * 60 + cfg.sec) * 1000;
+  elapsedBefore = 0; running = false;
+  alerts = cfg.alerts
+    .map(a => ({ at: (a.m * 60 + a.s) * 1000, color: a.color, hold: a.hold, fired: false }))
+    .filter(a => a.at > 0 && a.at < duration);
+  prevRemaining = duration;
+  setColor(null);
+  $('bar').style.display = cfg.showBar ? '' : 'none';
+  $('hint').textContent = 'กด Space เพื่อเริ่ม';
+  $('hint').style.opacity = 1;
+  shownMain = shownOver = '';
+  draw();
+}
+function start() {
+  if (running) return;
+  running = true; startedAt = performance.now();
+  $('hint').style.opacity = 0;
+}
+function pause() {
+  if (!running) return;
+  elapsedBefore = elapsed(); running = false;
+  $('hint').textContent = 'หยุดชั่วคราว — กด Space เพื่อเดินต่อ';
+  $('hint').style.opacity = 1;
+}
+
+function setColor(color) {
+  document.body.classList.remove('a-green', 'a-yellow', 'a-red');
+  if (color) document.body.classList.add('a-' + color);
+}
+function flash(a) {
+  clearTimeout(flashTimer);
+  setColor(a.color);
+  if (a.hold > 0) flashTimer = setTimeout(() => setColor(null), a.hold * 1000);
+}
+
+function draw() {
+  const remaining = duration - elapsed();
+
+  // ตรวจการแจ้งเตือนเมื่อเวลาผ่านจุดที่ตั้งไว้
+  for (const a of alerts) {
+    if (!a.fired && prevRemaining > a.at && remaining <= a.at) { a.fired = true; flash(a); }
+  }
+  prevRemaining = remaining;
+
+  const main = remaining > 0 ? fmt(Math.ceil(remaining / 1000)) : '00:00';
+  if (main !== shownMain) { $('clockText').textContent = shownMain = main; }
+
+  const over = remaining <= 0 ? 'เกินเวลา +' + fmt(Math.floor(-remaining / 1000)) : '';
+  if (over !== shownOver) {
+    shownOver = over;
+    $('over').textContent = over;
+    $('over').classList.toggle('on', !!over);
+  }
+
+  $('bar').style.transform = `scaleX(${duration ? Math.max(0, remaining) / duration : 0})`;
+}
+(function loop() { if (document.body.classList.contains('show')) draw(); requestAnimationFrame(loop); })();
+
+/* ---------- เต็มจอ / สลับหน้า ---------- */
+function enterFs() { document.documentElement.requestFullscreen?.().catch(() => {}); }
+function toggleFs() { document.fullscreenElement ? document.exitFullscreen() : enterFs(); }
+document.addEventListener('fullscreenchange', () =>
+  document.body.classList.toggle('fs', !!document.fullscreenElement));
+
+$('go').onclick = () => {
+  readForm();
+  reset();
+  document.body.classList.add('show');
+  document.activeElement.blur();
+  enterFs();
+};
+$('btnFs').onclick = e => { e.currentTarget.blur(); enterFs(); };
+$('btnBack').onclick = () => {
+  pause(); setColor(null); clearTimeout(flashTimer);
+  if (document.fullscreenElement) document.exitFullscreen();
+  document.body.classList.remove('show');
+};
+
+document.addEventListener('keydown', e => {
+  if (!document.body.classList.contains('show')) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (e.repeat) return;
+    const now = performance.now();
+    if (!running) {
+      start();
+      lastRunPress = 0;               // การกดเพื่อเริ่มไม่นับเป็นครั้งแรกของ "กด 2 ครั้ง"
+    } else if (now - lastRunPress < 450) {
+      pause();
+      lastRunPress = 0;
+    } else {
+      lastRunPress = now;
+    }
+  } else if (e.code === 'KeyR') {
+    reset();
+  } else if (e.code === 'KeyF') {
+    toggleFs();
+  }
+});
+
+renderForm();
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@
   --r:14px; --shadow:0 2px 10px rgba(0,21,99,.08);
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;scroll-padding-bottom:90px}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Sarabun",Tahoma,sans-serif}
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--navy-2)}
@@ -99,6 +99,12 @@ a{color:var(--navy-2)}
 
 /* ---------- evaluate ---------- */
 .ehead{background:var(--navy);color:#fff;border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
+.ehead{display:flex;align-items:center;gap:16px}
+.ehead .eh-main{flex:1;min-width:0}
+.abs-btn{flex:none;border:1px solid var(--yellow);background:var(--yellow);color:#000;font-weight:700;border-radius:10px;padding:8px 16px;cursor:pointer;white-space:nowrap}
+.abs-btn:hover:not(:disabled){filter:brightness(.95)}
+.abs-btn:disabled{opacity:.6;cursor:wait}
+@media (max-width:600px){.ehead{flex-direction:column;align-items:stretch;gap:10px}.abs-btn{width:100%}}
 .ehead .nm{font-size:21px;font-weight:700;line-height:1.25}
 .ehead .tp{margin-top:6px;line-height:1.4}
 .ehead .meta{font-size:14px;opacity:.8;margin-top:6px}
@@ -113,13 +119,36 @@ a{color:var(--navy-2)}
 .item .tx{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
 .item .mx{flex:none;background:var(--navy);color:#fff;font-weight:700;border-radius:8px;min-width:40px;text-align:center;padding:0 8px}
 .item .ctl{display:flex;align-items:center;gap:12px;margin-top:10px}
-.item input[type=range]{flex:1;accent-color:var(--navy);height:28px}
-.item .ctl.empty input[type=range]{opacity:.35}
+/* ปุ่มเลือกคะแนน 1–5: ช่องที่ถึงระดับที่เลือกจะถูกระบายสี (สีเปลี่ยนตามระดับ) */
+.lv{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.lv button{height:44px;border:1px solid var(--line);background:#fff;border-radius:10px;font-size:18px;font-weight:700;color:var(--muted);cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.lv button:hover:not(:disabled){border-color:var(--navy-2)}
+.lv button:disabled{cursor:not-allowed;opacity:.7}
+.ctl{--lc:var(--line)}
+.ctl[data-lv="1"]{--lc:#dc2626}.ctl[data-lv="2"]{--lc:#ea7b0c}.ctl[data-lv="3"]{--lc:#d4a200}.ctl[data-lv="4"]{--lc:#65a30d}.ctl[data-lv="5"]{--lc:#047857}
+.lv button.on{background:var(--lc);border-color:var(--lc);color:#fff}
+.ctl[data-lv="3"] .lv button.on{color:#111}
 .num{width:78px;text-align:center;font-size:20px;font-weight:700;padding:6px;border:1px solid var(--line);border-radius:10px;font-variant-numeric:tabular-nums}
 .num.bad{border-color:var(--err);color:var(--err)}
-.quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.quick button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:2px 10px;font-size:14px;cursor:pointer}
-.quick button:hover{border-color:var(--navy-2)}
+/* หน้าให้คะแนน: มือถือแสดงเฉพาะฟอร์มคะแนน — แท็บเล็ต/คอมพิวเตอร์แสดงเกณฑ์ซ้าย คะแนนขวา */
+.crit{display:none}
+.crit h2{margin:0 0 10px;font-size:19px}
+.crit .cs{margin-bottom:14px}
+.crit .cst{display:flex;justify-content:space-between;gap:10px;background:#f3f5fb;border-radius:8px;padding:6px 10px;margin-bottom:6px}
+.crit .cst span{flex:none;background:var(--yellow);border-radius:8px;padding:0 8px;font-weight:700;font-size:14px}
+.crit .ci{padding:8px 4px;border-bottom:1px dashed var(--line)}
+.crit .ci:last-child{border-bottom:0}
+.crit .ct{display:flex;justify-content:space-between;gap:10px;font-weight:700;line-height:1.35}
+.crit .ct em{flex:none;font-style:normal;background:var(--navy);color:#fff;border-radius:8px;min-width:32px;text-align:center;padding:0 6px;font-size:14px;height:fit-content}
+.crit .cd{margin:6px 0 0;font-size:14px;color:var(--muted);white-space:pre-wrap;line-height:1.45}
+.crit .cdi{margin-top:6px;font-size:14px;resize:vertical}
+.crit #savedet{margin-top:4px}
+@media (min-width:768px){
+  .evwrap{max-width:1280px}
+  .evgrid{display:grid;grid-template-columns:minmax(300px,2fr) minmax(0,3fr);gap:16px;align-items:start}
+  .crit{display:block;background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:16px;position:sticky;top:70px;max-height:calc(100vh - 160px);overflow-y:auto}
+  .sticky .in{max-width:1248px}
+}
 .sticky{position:sticky;bottom:0;z-index:15;background:#fff;border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,21,99,.08);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
 .sticky .in{max-width:928px;margin:0 auto;display:flex;align-items:center;gap:14px}
 .sticky .tot{font-size:30px;font-weight:700;color:var(--navy);line-height:1;font-variant-numeric:tabular-nums}
