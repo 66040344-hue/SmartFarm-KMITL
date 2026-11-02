@@ -16,7 +16,7 @@ import {
     writeBatch, onSnapshot, serverTimestamp, deleteDoc, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { firebaseConfig } from "./seminar-firebase-config.js";
-import { SEMINAR } from "./seminar-eval-data.js";
+import { SEMINAR, itemChoices } from "./seminar-eval-data.js";
 
 // ใช้ app แยกชื่อ เพื่อไม่ให้ session ของหน้านี้ทับ session นักศึกษา/แอดมินของหน้าอื่นในโดเมนเดียวกัน
 const fbApp = initializeApp(firebaseConfig, "seminar-eval");
@@ -78,7 +78,8 @@ function needAdmin() { if (!isAdmin(needUser())) fail("เฉพาะผู้�
 
 function toRec(d) {
     const t = d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate() : new Date();
-    return { tid: d.email, sid: d.sid, items: d.items || {}, total: d.total, comment: d.comment || "", updatedAt: t.toISOString() };
+    return { tid: d.email, sid: d.sid, items: d.items || {}, total: d.total, comment: d.comment || "", updatedAt: t.toISOString(),
+        status: d.status || "submitted" };                  // ใบเก่าที่ไม่มี status ถือว่าส่งแล้ว
 }
 
 async function readMain() {
@@ -92,7 +93,10 @@ function criteriaOf(main) {
     const src = Array.isArray(main.criteria) && main.criteria.length ? main.criteria : SEMINAR.criteria;
     return src.map(s => ({
         id: s.id, name: s.name,
-        items: s.items.map(i => ({ id: i.id, max: i.max, text: i.text, detail: i.detail || "" })),
+        items: s.items.map(i => {
+            const choices = itemChoices(i);
+            return { id: i.id, max: choices[choices.length - 1], choices, text: i.text, detail: i.detail || "" };
+        }),
         max: s.items.reduce((a, i) => a + i.max, 0)
     }));
 }
@@ -142,7 +146,9 @@ export const API = {
         return out;
     }),
 
-    saveScore: (sid, items, comment) => guard(async () => {
+    // submit = false → บันทึกไว้ (draft) ครบหรือไม่ครบก็ได้ แก้ไขได้ภายหลัง ยังไม่นับในสรุป
+    // submit = true  → ส่งแบบประเมิน ต้องครบทุกข้อ และแก้ไขไม่ได้อีก
+    saveScore: (sid, items, comment, submit) => guard(async () => {
         const u = needUser();
         if (!canGrade(u)) fail("บัญชีนี้ไม่มีสิทธิ์ให้คะแนน");
         const st = SEMINAR.students.find(s => s.sid === sid);
@@ -150,14 +156,21 @@ export const API = {
         const main = await readMain();
         if ((main.locked || {})[st.date]) fail("ผู้ดูแลปิดรับคะแนนของวันนี้แล้ว");
         const ITEMS = criteriaOf(main).flatMap(s => s.items), clean = {};
+        const old = await getDoc(doc(db, "evalScores", `${sid}__${u.email}`));
+        if (old.exists() && (old.data().status || "submitted") === "submitted") fail("ส่งแบบประเมินนี้แล้ว แก้ไขไม่ได้");
         for (const it of ITEMS) {
-            const v = Number(items[it.id]);
-            if (!(v >= 0 && v <= it.max) || Math.round(v * 2) !== v * 2) fail(`คะแนน "${it.text}" ไม่ถูกต้อง`);
+            const raw = items[it.id];
+            if (raw === "" || raw == null) {
+                if (submit) fail(`ยังไม่ได้ให้คะแนน "${it.text}"`);
+                continue;
+            }
+            const v = Number(raw);
+            if (!it.choices.includes(v)) fail(`คะแนน "${it.text}" ไม่ถูกต้อง`);
             clean[it.id] = v;
         }
-        const total = ITEMS.reduce((a, it) => a + clean[it.id], 0);
+        const total = Object.values(clean).reduce((a, v) => a + v, 0);
         const data = {
-            sid, email: u.email, name: u.name, date: st.date, items: clean, total,
+            sid, email: u.email, name: u.name, date: st.date, items: clean, total, status: submit ? "submitted" : "draft",
             comment: String(comment || "").slice(0, 1000), updatedAt: serverTimestamp()
         };
         await setDoc(doc(db, "evalScores", `${sid}__${u.email}`), data);
@@ -278,9 +291,13 @@ export const API = {
             if (!name) fail(`กรุณากรอกชื่อส่วนที่ ${si + 1}`);
             if (!s.items.length) fail(`ส่วนที่ ${si + 1} ต้องมีอย่างน้อย 1 ข้อ`);
             const items = s.items.map(i => {
-                const text = String(i.text || "").trim(), max = Number(i.max);
+                const text = String(i.text || "").trim();
                 if (!text) fail(`ส่วนที่ ${si + 1}: กรุณากรอกรายการประเมินให้ครบ`);
-                if (!(max > 0 && max <= 100) || Math.round(max * 2) !== max * 2) fail(`"${text}": คะแนนเต็มต้องเป็นเลข 0.5–100 (เพิ่มทีละ 0.5)`);
+                const choices = [...new Set((Array.isArray(i.choices) ? i.choices : []).map(Number))].sort((a, b) => a - b);
+                if (!choices.length || choices.length > 10) fail(`"${text}": ต้องมีตัวเลือกคะแนน 1–10 ช่อง`);
+                if (choices.some(c => !(c >= 0 && c <= 100) || Math.round(c * 2) !== c * 2)) fail(`"${text}": ตัวเลือกคะแนนต้องเป็นเลข 0–100 (เพิ่มทีละ 0.5)`);
+                const max = choices[choices.length - 1];
+                if (!(max > 0)) fail(`"${text}": ต้องมีตัวเลือกที่มากกว่า 0`);
                 let id = i.id;
                 if (!idOk(id) || used.has(id)) {
                     for (let k = 1; k <= MAX_ITEMS; k++) if (!kept.has("c" + k) && !used.has("c" + k)) { id = "c" + k; break; }
@@ -288,7 +305,7 @@ export const API = {
                     kept.add(id);
                 }
                 used.add(id); count++;
-                return { id, max, text, detail: String(i.detail || "").trim().slice(0, 1000) };
+                return { id, max, choices, text, detail: String(i.detail || "").trim().slice(0, 1000) };
             });
             return { id: "s" + (si + 1), name, items };
         });
