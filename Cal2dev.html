@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b7a75">
+  <title>Cal2 · คำนวณปุ๋ยน้ำ + วิเคราะห์ดิน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #eef3f5; --card: #ffffff; --ink: #0b1a21; --muted: #587079; --line: #d6e1e6;
+      --brand: #0b7a75; --brand-dark: #075652; --brand-soft: #dcf2ef; --on-brand: #ffffff;
+      --orange: #b35a00; --orange-soft: #fff3de; --red: #d8433f; --red-soft: #fbe9e8; --blue: #0a6fb0; --blue-soft: #e1f3fd;
+      --track: #e4edf1; --shadow: 0 1px 2px rgba(11, 26, 33, .06), 0 6px 18px rgba(11, 26, 33, .05);
+      --g-ok: #2e9e6b; --g-warn: #e8a317; --g-bad: #d8433f;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #050c11; --card: #0b1820; --ink: #e6f1f4; --muted: #8aa3ad; --line: #1d3340;
+        --brand: #4fe3d3; --brand-dark: #8ff0e4; --brand-soft: #0f2d33; --on-brand: #04201d;
+        --orange: #ffa24d; --orange-soft: #3a2614; --red: #ff8a85; --red-soft: #3a1b1a; --blue: #8fd8ff; --blue-soft: #0e2a3a;
+        --track: #10222c; --shadow: none;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #050c11; --card: #0b1820; --ink: #e6f1f4; --muted: #8aa3ad; --line: #1d3340;
+      --brand: #4fe3d3; --brand-dark: #8ff0e4; --brand-soft: #0f2d33; --on-brand: #04201d;
+      --orange: #ffa24d; --orange-soft: #3a2614; --red: #ff8a85; --red-soft: #3a1b1a; --blue: #8fd8ff; --blue-soft: #0e2a3a;
+      --track: #10222c; --shadow: none;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 "Chakra Petch", system-ui, sans-serif; padding-bottom: 88px; }
+    a { color: var(--brand); }
+    button, input, select { font: inherit; color: inherit; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+    .muted { color: var(--muted); } .small { font-size: .85rem; }
+    .row { display: flex; align-items: center; gap: 8px; } .row.wrap-r { flex-wrap: wrap; } .between { justify-content: space-between; }
+
+    header.top { background: var(--card); border-bottom: 1px solid var(--line); }
+    header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+    h1 { font-size: 1.25rem; margin: 0; line-height: 1.2; } h1 small { display: block; font-weight: 400; font-size: .85rem; color: var(--muted); margin-top: 2px; }
+    .tag { font-size: .75rem; font-weight: 600; background: var(--brand-soft); color: var(--brand-dark); border-radius: 999px; padding: 2px 10px; margin-left: 8px; vertical-align: middle; }
+
+    .layout { display: grid; gap: 16px; padding-top: 16px; padding-bottom: 24px; }
+    @media (min-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr) 460px; align-items: start; } .side { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; border-radius: 16px; } body { padding-bottom: 24px; } .bar { display: none !important; } }
+
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); }
+    .card + .card { margin-top: 16px; }
+    .card h2 { font-size: 1.05rem; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
+    .no { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--brand); color: var(--on-brand); font-size: .85rem; font-weight: 700; flex: none; }
+
+    label.field { display: block; } label.field > span, .lbl { display: block; font-size: .88rem; font-weight: 500; margin-bottom: 6px; }
+    label.field > span em { font-style: normal; color: var(--muted); font-weight: 400; font-size: .78rem; }
+    input[type=number], input[type=text], select { width: 100%; min-height: 46px; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--card); }
+    input:focus, select:focus, button:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 40%, transparent); outline-offset: 1px; border-color: var(--brand); }
+    .grid2 { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; } @media (max-width: 520px) { .grid2 { grid-template-columns: 1fr; } }
+    .grid3 { display: grid; gap: 12px; grid-template-columns: repeat(3, 1fr); } @media (max-width: 520px) { .grid3 { grid-template-columns: 1fr 1fr; } }
+    .stepper { display: flex; gap: 8px; } .stepper input { text-align: center; font-weight: 600; font-size: 1.1rem; }
+    .stepper button { flex: none; width: 46px; border: 1.5px solid var(--line); background: var(--card); border-radius: 12px; font-size: 1.3rem; cursor: pointer; }
+    .stepper button:active { background: var(--brand-soft); }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .chip { min-height: 38px; padding: 4px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--card); cursor: pointer; font-size: .9rem; }
+    .chip.on { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+
+    .opts { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .opt { text-align: left; padding: 10px 12px; border: 1.5px solid var(--line); background: var(--card); border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+    .opt b { font-size: .92rem; font-weight: 600; } .opt span { font-size: .8rem; color: var(--muted); }
+    .opt.on { border-color: var(--brand); background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--brand); }
+    .opt.on b { color: var(--brand-dark); }
+
+    .hint { margin-top: 10px; font-size: .85rem; background: var(--brand-soft); color: var(--brand-dark); border-radius: 10px; padding: 8px 12px; }
+    .notice { border-radius: 12px; padding: 12px 14px; background: var(--orange-soft); color: var(--ink); border-left: 4px solid var(--orange); margin-top: 12px; font-size: .92rem; }
+    .notice.red { background: var(--red-soft); border-color: var(--red); } .notice.green { background: var(--brand-soft); border-color: var(--brand); }
+    .notice ul { margin: 6px 0 0; padding-left: 20px; }
+    .check { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; padding: 12px; border: 1.5px solid var(--line); border-radius: 12px; cursor: pointer; }
+    .check input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--brand); flex: none; }
+
+    details.more { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 12px; }
+    details.more summary { cursor: pointer; font-weight: 500; font-size: .92rem; color: var(--muted); }
+    .src { margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--track); font-size: .88rem; }
+    code { background: var(--card); border-radius: 6px; padding: 1px 6px; font-size: .82rem; }
+    .grp { font-size: .8rem; font-weight: 600; color: var(--brand-dark); text-transform: none; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+    .grp:first-of-type { margin-top: 4px; }
+
+    /* ผลลัพธ์ */
+    .tabs { display: flex; gap: 6px; background: var(--track); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
+    .tabs button { flex: 1; min-height: 40px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; font-weight: 600; color: var(--muted); }
+    .tabs button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .tabs .cnt { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--red); color: #fff; font-size: .75rem; }
+    .status { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .badge { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem; font-weight: 600; background: var(--track); color: var(--muted); }
+    .badge.ok { background: var(--brand-soft); color: var(--brand-dark); } .badge.stop, .badge.bad { background: var(--red-soft); color: var(--red); } .badge.warn { background: var(--orange-soft); color: var(--orange); }
+    .hero { margin: 12px 0; padding: 16px; border-radius: 14px; background: var(--brand); color: var(--on-brand); }
+    .hero .big { font-size: 2.4rem; font-weight: 700; line-height: 1.1; } .hero .sub { opacity: .9; font-size: .88rem; }
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kpi { background: var(--track); border-radius: 12px; padding: 10px 12px; } .kpi .l { font-size: .78rem; color: var(--muted); } .kpi .v { font-size: 1.25rem; font-weight: 600; } .kpi .v small { font-size: .75rem; font-weight: 400; color: var(--muted); }
+    .npk { display: flex; height: 30px; border-radius: 8px; overflow: hidden; margin-top: 8px; font-size: .78rem; font-weight: 600; color: #fff; }
+    .npk div { display: grid; place-items: center; min-width: 0; overflow: hidden; white-space: nowrap; transition: width .3s; }
+    .nn { background: #0b7a75; } .np { background: #c76a00; } .nk { background: #0a6fb0; }
+    .sec { font-size: .9rem; font-weight: 600; margin: 18px 0 8px; }
+    .groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .groups .kpi { text-align: center; } .groups .kpi .v { font-size: 1rem; }
+    .adj { font-size: .72rem; font-weight: 600; margin-top: 2px; } .adj.up { color: var(--brand); } .adj.down { color: var(--orange); }
+    ul.list { margin: 6px 0 0; padding-left: 20px; font-size: .9rem; } ul.list li + li { margin-top: 3px; }
+
+    .prod { display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; padding: 10px; border: 1.5px solid var(--line); background: var(--card); border-radius: 12px; cursor: pointer; }
+    .prod + .prod { margin-top: 8px; } .prod.on { border-color: var(--brand); background: var(--brand-soft); }
+    .prod img { width: 52px; height: 52px; border-radius: 10px; object-fit: contain; background: #fff; flex: none; border: 1px solid var(--line); }
+    .prod .nm { font-weight: 600; font-size: .95rem; } .prod .bar2 { height: 6px; border-radius: 3px; background: var(--track); margin-top: 6px; overflow: hidden; } .prod .bar2 i { display: block; height: 100%; }
+    .prod .grow { flex: 1; min-width: 0; }
+    .btn { min-height: 44px; padding: 0 18px; border-radius: 12px; border: 0; background: var(--brand); color: var(--on-brand); font-weight: 600; cursor: pointer; }
+    .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); } .btn.sm { min-height: 36px; padding: 0 12px; font-size: .88rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; } .actions .btn { flex: 1; }
+    .addform { margin-top: 10px; padding: 12px; background: var(--track); border-radius: 12px; display: grid; gap: 8px; grid-template-columns: repeat(3, 1fr); }
+    .addform input[type=text] { grid-column: 1 / -1; }
+
+    /* วิเคราะห์ดิน */
+    .score { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+    .score .kpi { text-align: center; } .score .v { font-size: 1.5rem; }
+    .score .bad .v { color: var(--red); } .score .warn .v { color: var(--orange); } .score .good .v { color: var(--g-ok); }
+    .todo { margin: 0; padding: 0; list-style: none; counter-reset: s; } .todo li { counter-increment: s; display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: .9rem; }
+    .todo li::before { content: counter(s); flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: var(--on-brand); font-size: .75rem; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
+    .sp { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-top: 10px; border-left: 5px solid var(--g-ok); }
+    .sp.warn { border-left-color: var(--g-warn); } .sp.bad { border-left-color: var(--g-bad); }
+    .sp .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .sp .nm { font-weight: 600; } .sp .val { font-weight: 700; font-size: 1.05rem; } .sp .val small { font-weight: 400; color: var(--muted); font-size: .75rem; }
+    .gauge { position: relative; display: flex; gap: 2px; height: 10px; margin: 12px 0 4px; }
+    .gauge i { flex: 1; border-radius: 3px; opacity: .35; } .gauge i.ok { background: var(--g-ok); } .gauge i.warn { background: var(--g-warn); } .gauge i.bad { background: var(--g-bad); } .gauge i.cur { opacity: 1; }
+    .gauge b { position: absolute; top: -4px; width: 4px; height: 18px; border-radius: 2px; background: var(--ink); transform: translateX(-2px); }
+    .gl { display: flex; font-size: .68rem; color: var(--muted); text-align: center; } .gl span { flex: 1; }
+    .act { display: flex; gap: 8px; align-items: flex-start; font-size: .88rem; margin-top: 8px; }
+    .act .t { flex: none; font-size: .7rem; font-weight: 700; border-radius: 6px; padding: 1px 8px; margin-top: 2px; white-space: nowrap; }
+    .act .t.add { background: var(--brand-soft); color: var(--brand-dark); } .act .t.cut { background: var(--orange-soft); color: var(--orange); } .act .t.chk { background: var(--blue-soft); color: var(--blue); } .act .t.stp { background: var(--red-soft); color: var(--red); }
+    .ratio { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: .9rem; }
+    table.ref { width: 100%; border-collapse: collapse; font-size: .8rem; } table.ref th, table.ref td { text-align: left; padding: 5px 6px; border-top: 1px solid var(--line); vertical-align: top; } table.ref th { color: var(--muted); font-weight: 500; }
+    .empty { text-align: center; color: var(--muted); padding: 20px 0; }
+
+    .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--card); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 -4px 16px rgba(0,0,0,.08); }
+    .bar b { font-size: 1.15rem; } .bar .btn { min-height: 40px; }
+    #toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 999px; font-size: .9rem; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20; }
+    #toast.show { opacity: 1; }
+    @media print { header.top, .form, .bar, .actions, .addform, #moreProd, .tabs { display: none !important; } .layout { display: block; } .side { position: static; max-height: none; overflow: visible; } .card { box-shadow: none; } body { background: #fff; } #pSoil, #pFert { display: block !important; } }
+  </style>
+</head>
+
+<body>
+  <header class="top">
+    <div class="wrap">
+      <h1>คำนวณปุ๋ยน้ำ + วิเคราะห์ดินเชิงลึก<span class="tag">Cal2</span><small>บอกว่าธาตุไหนขาด/เกิน และควรเพิ่มหรือลดอะไร เท่าไร</small></h1>
+      <div class="row"><a class="btn ghost sm" href="CalMenu.html" style="display:inline-grid;place-items:center;text-decoration:none">เมนู</a><button class="btn ghost sm" id="themeBtn" type="button" aria-label="สลับโหมดมืด/สว่าง">โหมดมืด</button></div>
+    </div>
+  </header>
+
+  <main class="wrap layout">
+    <div class="form">
+      <section class="card">
+        <h2><span class="no">1</span>ต้นทุเรียนและระยะการเจริญเติบโต</h2>
+        <div class="grid2">
+          <div class="field"><span class="lbl">เส้นผ่านศูนย์กลางทรงพุ่ม (เมตร)</span>
+            <div class="stepper"><button type="button" data-step="canopyDiameter" data-d="-0.5" aria-label="ลด">−</button>
+              <input type="number" id="canopyDiameter" value="8" min="0.1" step="0.1" inputmode="decimal">
+              <button type="button" data-step="canopyDiameter" data-d="0.5" aria-label="เพิ่ม">+</button></div>
+          </div>
+          <div class="field"><span class="lbl">จำนวนต้น</span>
+            <div class="stepper"><button type="button" data-step="treeCount" data-d="-1" aria-label="ลด">−</button>
+              <input type="number" id="treeCount" value="10" min="1" step="1" inputmode="numeric">
+              <button type="button" data-step="treeCount" data-d="1" aria-label="เพิ่ม">+</button></div>
+          </div>
+        </div>
+        <div class="lbl" style="margin-top:16px">ระยะการเจริญเติบโต</div>
+        <div class="opts" id="stageOpts" role="radiogroup" aria-label="ระยะการเจริญเติบโต"></div>
+      </section>
+
+      <section class="card">
+        <h2><span class="no">2</span>สภาพอากาศ</h2>
+        <div class="opts" id="weatherOpts" role="radiogroup" aria-label="สภาพอากาศ"></div>
+        <div class="hint" id="weatherHint"></div>
+        <label class="check" id="wetBox" hidden><input type="checkbox" id="soilStillWet">
+          <span><b>ดินยังแฉะ มีน้ำขัง หรือระบายน้ำไม่ทัน</b><br><span class="small muted">เปิดไว้เพื่อระงับการจ่ายปุ๋ยชั่วคราว เพื่อความปลอดภัยของราก</span></span></label>
+
+        <details class="more" id="srcDetails">
+          <summary>ปรับน้ำด้วยข้อมูลพยากรณ์อากาศ / ค่าจากสวน (ไม่บังคับ)</summary>
+          <div class="chips" id="srcChips">
+            <button type="button" class="chip" data-src="forecast">พยากรณ์อากาศ</button>
+            <button type="button" class="chip" data-src="station">ค่าวัดในสวนที่กรอกเอง</button>
+          </div>
+          <div class="src" id="srcForecast" hidden>
+            <div class="grid2">
+              <label class="field"><span>ละติจูด</span><input type="number" id="lat" step="any" placeholder="เช่น 12.6"></label>
+              <label class="field"><span>ลองจิจูด</span><input type="number" id="lng" step="any" placeholder="เช่น 102.1"></label>
+            </div>
+            <div class="row wrap-r" style="margin-top:8px"><button type="button" class="btn ghost sm" id="locBtn">ใช้ตำแหน่งปัจจุบัน</button><button type="button" class="btn sm" id="fcBtn">ดึงพยากรณ์</button></div>
+            <div id="srcForecastBody" style="margin-top:8px"></div>
+          </div>
+          <div class="src" id="srcStation" hidden>
+            <div class="grid2">
+              <label class="field"><span>อุณหภูมิ (°C)</span><input type="number" id="stTemp" step="0.1" placeholder="32"></label>
+              <label class="field"><span>ความชื้นสัมพัทธ์ (%)</span><input type="number" id="stRh" step="0.1" placeholder="70"></label>
+            </div>
+            <label class="field" style="margin-top:8px"><span>ความชื้นดิน (%)</span><input type="number" id="stSoil" step="0.1" placeholder="55"></label>
+            <div id="srcStationBody" style="margin-top:8px"></div>
+          </div>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2><span class="no">3</span>สภาพต้นและปัญหาที่พบ</h2>
+        <label class="field"><span>สภาพต้นโดยรวม</span>
+          <select id="treeCondition">
+            <option value="สมบูรณ์">ต้นสมบูรณ์ แข็งแรงตามปกติ</option>
+            <option value="โทรม">ต้นโทรม สุขภาพไม่ดี (ต้องการฟื้นฟู)</option>
+            <option value="เฝ้าระวัง">พบความผิดปกติเล็กน้อย ต้องเฝ้าระวัง</option>
+            <option value="เครียดเล็กน้อย">ต้นเครียดเล็กน้อย (ลด 25%)</option>
+            <option value="เครียดปานกลาง">ต้นเครียดปานกลาง (ลด 50%)</option>
+            <option value="เครียดรุนแรง">ต้นเครียดรุนแรง (ระงับการจ่ายปุ๋ย)</option>
+            <option value="รากวิกฤต">รากเน่า / รากขาดอากาศ (ระงับการจ่ายปุ๋ย)</option>
+          </select></label>
+        <div class="lbl" style="margin-top:14px">อาการผิดปกติเพิ่มเติม (ถ้ามี)</div>
+        <div class="chips" id="crisisChips" style="margin-top:0">
+          <button type="button" class="chip" data-crisis="อาการใบไหม้">ใบไหม้</button>
+          <button type="button" class="chip" data-crisis="แตกใบอ่อน">แตกใบอ่อน</button>
+          <button type="button" class="chip" data-crisis="ผลร่วง">ผลร่วง</button>
+          <button type="button" class="chip" data-crisis="ดอกร่วง">ดอกร่วง</button>
+        </div>
+        <details class="more">
+          <summary>ตั้งค่าการให้น้ำ (ขั้นสูง)</summary>
+          <div class="grid2" style="margin-top:10px">
+            <label class="field"><span>น้ำพื้นฐาน (ลิตร/ตร.ม.)</span><input type="number" id="baseWater" value="5" min="0.1" step="0.1"></label>
+            <label class="field"><span>ประสิทธิภาพระบบน้ำ (%)</span><input type="number" id="irrEff" value="90" min="1" max="100" step="1"></label>
+          </div>
+          <label class="field" style="margin-top:10px"><span>สูตรตัวคูณน้ำจากพยากรณ์ <code>rain</code> <code>temp</code> <code>et0</code></span><input type="text" id="fForecast"></label>
+          <label class="field" style="margin-top:10px"><span>สูตรตัวคูณน้ำจากค่าในสวน <code>temp</code> <code>rh</code> <code>soil</code></span><input type="text" id="fStation"></label>
+          <button type="button" class="btn ghost sm" id="resetSettings" style="margin-top:10px">คืนค่าเริ่มต้น</button>
+        </details>
+      </section>
+
+      <section class="card" id="soilCard">
+        <h2><span class="no">4</span>ผลวิเคราะห์ดินจากห้องปฏิบัติการ</h2>
+        <div class="small muted">กรอกเท่าที่มี ไม่ต้องครบทุกช่อง · ใช้หน่วยตามใบรายงานผล · วิธีสกัดที่ระบบอ้างอิง: pH 1:1 น้ำ, P แบบ Bray II, K/Ca/Mg แบบ NH₄OAc pH 7, Zn แบบ DTPA, B แบบน้ำร้อน</div>
+        <div class="row wrap-r" style="margin-top:10px"><button type="button" class="btn ghost sm" id="demoSoil">ใส่ค่าตัวอย่าง</button><button type="button" class="btn ghost sm" id="clearSoil">ล้างค่าดิน</button></div>
+
+        <div class="grp">ความเป็นกรด-ด่าง และความเค็ม</div>
+        <div class="grid2">
+          <label class="field"><span>pH ดิน <em>(1:1 น้ำ)</em></span><input type="number" id="sPH" min="0" max="14" step="0.1" inputmode="decimal" placeholder="เช่น 5.2"></label>
+          <label class="field"><span>EC <em>(dS/m)</em></span><input type="number" id="sEC" min="0" step="0.01" inputmode="decimal" placeholder="เช่น 0.8"></label>
+        </div>
+        <div class="grp">อินทรียวัตถุและไนโตรเจน</div>
+        <div class="grid3">
+          <label class="field"><span>OM <em>(%)</em></span><input type="number" id="sOM" min="0" step="0.1" inputmode="decimal" placeholder="2.1"></label>
+          <label class="field"><span>C:N ratio</span><input type="number" id="sCN" min="1" step="0.1" inputmode="decimal" placeholder="12"></label>
+          <label class="field"><span>N ทั้งหมด <em>(%)</em></span><input type="number" id="sN" min="0" step="0.001" inputmode="decimal" placeholder="คำนวณเอง"></label>
+        </div>
+        <div class="small muted" style="margin-top:6px">ถ้าไม่ทราบ N ทั้งหมด ระบบประมาณจาก OM × 0.58 ÷ C:N (ถ้ากรอกทั้งสองช่อง)</div>
+        <div class="grp">ธาตุอาหารหลักและธาตุรอง (mg/kg)</div>
+        <div class="grid2">
+          <label class="field"><span>P ที่เป็นประโยชน์ <em>(Bray II)</em></span><input type="number" id="sP" min="0" step="0.1" inputmode="decimal" placeholder="เช่น 35"></label>
+          <label class="field"><span>K แลกเปลี่ยนได้</span><input type="number" id="sK" min="0" step="0.1" inputmode="decimal" placeholder="เช่น 120"></label>
+          <label class="field"><span>Ca แลกเปลี่ยนได้</span><input type="number" id="sCa" min="0" step="1" inputmode="decimal" placeholder="เช่น 900"></label>
+          <label class="field"><span>Mg แลกเปลี่ยนได้</span><input type="number" id="sMg" min="0" step="1" inputmode="decimal" placeholder="เช่น 120"></label>
+        </div>
+        <div class="grp">จุลธาตุ และความจุแลกเปลี่ยนไอออน</div>
+        <div class="grid3">
+          <label class="field"><span>Zn <em>(DTPA mg/kg)</em></span><input type="number" id="sZn" min="0" step="0.1" inputmode="decimal" placeholder="1.2"></label>
+          <label class="field"><span>B <em>(น้ำร้อน mg/kg)</em></span><input type="number" id="sB" min="0" step="0.01" inputmode="decimal" placeholder="0.4"></label>
+          <label class="field"><span>CEC <em>(cmol/kg)</em></span><input type="number" id="sCEC" min="0" step="0.1" inputmode="decimal" placeholder="8"></label>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="card result" aria-live="polite">
+        <div class="tabs" role="tablist">
+          <button type="button" class="on" data-tab="fert" role="tab">ปุ๋ยน้ำ</button>
+          <button type="button" data-tab="soil" role="tab">วิเคราะห์ดิน<span class="cnt" id="soilCnt" hidden></span></button>
+        </div>
+        <div id="pFert"></div>
+        <div id="pSoil" hidden></div>
+      </section>
+    </aside>
+  </main>
+
+  <div class="bar" id="bar"><div><div class="small muted">ปุ๋ยน้ำต่อต้น</div><b id="barVal">–</b></div><button class="btn" id="barBtn" type="button">ดูผลละเอียด</button></div>
+  <div id="toast" role="status"></div>
+
+  <script>
+  (function () {
+    "use strict";
+    // ======== สูตรคำนวณปุ๋ยน้ำ (ชุดเดียวกับ Cal1 / calc-engine.js) ========
+    const fertilizerRates = {
+      "สร้างชุดใบ": { label: "ระยะสร้างชุดใบ", N: 3, P: 1, K: 1 },
+      "สะสมอาหาร": { label: "ระยะสะสมอาหาร", N: 1, P: 5, K: 5 },
+      "พัฒนาดอกเดือน1": { label: "ระยะพัฒนาดอกเดือน 1", N: 1, P: 5, K: 5 },
+      "พัฒนาดอกเดือน2": { label: "ระยะพัฒนาดอกเดือน 2", N: 1, P: 1, K: 1 },
+      "ติดผลเล็ก": { label: "ระยะติดผลเล็ก เดือน 1–2", N: 2, P: 1, K: 4 },
+      "พัฒนาผล": { label: "ระยะพัฒนาผล เดือน 3", N: 3, P: 1, K: 6 },
+      "ปรับปรุงคุณภาพ": { label: "ระยะปรับปรุงคุณภาพ เดือน 4", N: 1, P: 2, K: 8 },
+    };
+    const stageNames = {
+      "สร้างชุดใบ": "สร้างชุดใบ", "สะสมอาหาร": "สะสมอาหาร", "พัฒนาดอกเดือน1": "พัฒนาดอก เดือน 1", "พัฒนาดอกเดือน2": "พัฒนาดอก เดือน 2",
+      "ติดผลเล็ก": "ติดผลเล็ก เดือน 1–2", "พัฒนาผล": "พัฒนาผล เดือน 3", "ปรับปรุงคุณภาพ": "ปรับปรุงคุณภาพ เดือน 4",
+    };
+    const weatherRules = {
+      "ปกติ": { label: "อากาศปกติ", factor: 1, description: "สภาพอากาศปกติ (เหมาะแก่การให้ปุ๋ย)", hint: "เหมาะแก่การให้ปุ๋ย" },
+      "ฟ้าครึ้ม": { label: "ฟ้าครึ้ม", factor: 0.75, description: "ปรับปริมาณให้เหมาะกับสภาพฟ้าครึ้ม", hint: "ปรับลดปริมาณลง 25%" },
+      "อากาศแห้ง": { label: "แห้ง / แดดจัด / ลมแรง", factor: 1, description: "ควรให้ในช่วงเช้าหรือเย็นและตรวจความชื้นดิน", hint: "ควรให้ช่วงเช้าหรือเย็น และตรวจความชื้นดิน" },
+      "หลังฝนตก": { label: "หลังฝนตก", factor: 1, description: "สามารถให้ได้เมื่อดินระบายน้ำดีและไม่แฉะ", hint: "ให้ได้เมื่อดินระบายน้ำดีและไม่แฉะ" },
+      "ฝนชุก": { label: "ฝนตกชุก / ต่อเนื่อง", factor: 0, description: "ฝนตกชุกหรือตกต่อเนื่อง (งดจ่ายปุ๋ย)", hint: "งดจ่ายปุ๋ยน้ำ" },
+    };
+    const treeConditionRules = {
+      "สมบูรณ์": { factor: 1, description: "ต้นสมบูรณ์ แข็งแรงตามปกติ" },
+      "โทรม": { factor: 1, description: "ต้นโทรม สุขภาพไม่ดี (เน้น N ฟื้นฟูสภาพต้น)" },
+      "เฝ้าระวัง": { factor: 1, description: "พบความผิดปกติเล็กน้อย ควรติดตามอาการ" },
+      "เครียดเล็กน้อย": { factor: 0.75, description: "ต้นมีอาการเครียดเล็กน้อย" },
+      "เครียดปานกลาง": { factor: 0.5, description: "ต้นมีอาการเครียดปานกลาง" },
+      "เครียดรุนแรง": { factor: 0, description: "ต้นมีอาการเครียดรุนแรง (ระงับปุ๋ย)" },
+      "รากวิกฤต": { factor: 0, description: "พบภาวะรากเน่า รากขาดอากาศ หรือระบบรากวิกฤต" },
+    };
+    const crisisRules = {
+      "อาการใบไหม้": { factor: 0.5, advice: "อาการใบไหม้: ควรตรวจค่า EC ความเข้มข้นของปุ๋ยน้ำ การให้น้ำ และสภาพราก" },
+      "แตกใบอ่อน": { factor: 0.75, advice: "แตกใบอ่อน: ควรหลีกเลี่ยงการเร่งปุ๋ยและติดตามความสมบูรณ์ของใบอ่อน" },
+      "ผลร่วง": { factor: 0.5, advice: "ผลร่วง: ควรตรวจสมดุลน้ำ สภาพราก และความเหมาะสมของแคลเซียมกับโบรอน" },
+      "ดอกร่วง": { factor: 0.5, advice: "ดอกร่วง: ควรตรวจสภาพอากาศ ความชื้น และการใช้สารเสริมในระยะดอก" },
+    };
+    const BASE_RATE_ML_PER_SQM = 1;
+    const DEFAULTS = { baseWater: 5, irrEff: 90, fForecast: "et0 / 5 * (1 - rain / 200)", fStation: "soil < 40 ? 1.2 : soil > 70 ? 0.8 : 1" };
+
+    const PRODUCTS = [
+      { id: "nutri-gold-k-10-3-21", name: "Nutri-Gold K 10-3-21", n: 10, p: 3, k: 21 },
+      { id: "nutri-gold-k-3-0-25", name: "Nutri-Gold K 3-0-25", n: 3, p: 0, k: 25 },
+      { id: "nutri-gold-k-3-15-20", name: "Nutri-Gold K 3-15-20", n: 3, p: 15, k: 20 },
+      { id: "nutri-phoz-balance-13-13-13", name: "Nutri-Phoz Balance 13-13-13", n: 13, p: 13, k: 13 },
+      { id: "nutri-phoz-k-0-25-30", name: "Nutri-Phoz K 0-25-30", n: 0, p: 25, k: 30 },
+      { id: "nutri-phoz-k-0-3-30", name: "Nutri-Phoz K 0-3-30", n: 0, p: 3, k: 30 },
+      { id: "nutri-phoz-k-0-30-35", name: "Nutri-Phoz K 0-30-35", n: 0, p: 30, k: 35 },
+      { id: "nutri-phoz-k-10-5-20", name: "Nutri-Phoz K 10-5-20", n: 10, p: 5, k: 20 },
+      { id: "nutri-phoz-k-4-24-24", name: "Nutri-Phoz K 4-24-24", n: 4, p: 24, k: 24 },
+      { id: "nutri-phoz-k-6-24-6", name: "Nutri-Phoz K 6-24-6", n: 6, p: 24, k: 6 },
+      { id: "nutri-phoz-n-20-4-4", name: "Nutri-Phoz N 20-4-4", n: 20, p: 4, k: 4 },
+    ];
+
+    function rankProducts(rate, products) {
+      const share = (n, p, k) => { const t = n + p + k; return t > 0 ? [n / t, p / t, k / t] : [0, 0, 0]; };
+      const target = share(rate.N, rate.P, rate.K);
+      return products.map((prod) => {
+        const s = share(prod.n, prod.p, prod.k);
+        return { ...prod, dist: Math.hypot(s[0] - target[0], s[1] - target[1], s[2] - target[2]) };
+      }).sort((a, b) => a.dist - b.dist);
+    }
+
+    const FORMULA_FUNCS = { min: Math.min, max: Math.max, abs: Math.abs };
+    function evalWaterFormula(expr, vars) {
+      expr = String(expr || "").trim();
+      if (!expr) return { ok: true, value: 1 };
+      const names = Object.keys(vars);
+      if (!/^[0-9a-z_+\-*/().,<>=!?:&| \t]+$/i.test(expr)) return { ok: false, error: "สูตรมีอักขระที่ไม่รองรับ" };
+      const used = expr.match(/[a-z_][a-z_0-9]*/gi) || [];
+      const unknown = used.find((w) => !names.includes(w) && !(w in FORMULA_FUNCS));
+      if (unknown) return { ok: false, error: `ไม่รู้จักตัวแปร "${unknown}" (ใช้ได้: ${names.join(", ")})` };
+      const missing = used.find((w) => names.includes(w) && !Number.isFinite(vars[w]));
+      if (missing) return { ok: false, error: `ยังไม่มีข้อมูล "${missing}" สำหรับสูตรนี้` };
+      try {
+        const v = new Function(...names, "min", "max", "abs", `"use strict"; return (${expr});`)(...names.map((n) => vars[n]), Math.min, Math.max, Math.abs);
+        if (!Number.isFinite(v) || v < 0) return { ok: false, error: "ผลลัพธ์ของสูตรต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป" };
+        return { ok: true, value: v };
+      } catch (e) { return { ok: false, error: "สูตรไม่ถูกต้อง" }; }
+    }
+
+    // input: ... + nutrientFactors {N,P,K} + ecSafetyFactor จากการวิเคราะห์ดิน
+    function calcFertigation(input) {
+      const rate = { ...(fertilizerRates[input.growthStage] || fertilizerRates["สร้างชุดใบ"]) };
+      if (input.growthStage === "สร้างชุดใบ" && input.treeCondition === "โทรม") rate.N = 4;
+      const weatherRule = weatherRules[input.weather] || weatherRules["ปกติ"];
+      const canopyArea = Math.PI * Math.pow(input.diameter / 2, 2);
+      const baseVolumePerTree = canopyArea * BASE_RATE_ML_PER_SQM;
+      const totalRatio = rate.N + rate.P + rate.K;
+      const nf = input.nutrientFactors || { N: 1, P: 1, K: 1 };
+      const ecSafety = input.ecSafetyFactor == null ? 1 : input.ecSafetyFactor;
+      const treeRule = treeConditionRules[input.treeCondition] || treeConditionRules["สมบูรณ์"];
+      const treeFactors = [treeRule.factor];
+      const advice = [];
+      (input.crisis || []).forEach((c) => { if (!crisisRules[c]) return; treeFactors.push(crisisRules[c].factor); advice.push(crisisRules[c].advice); });
+      const treeFactor = Math.min(...treeFactors);
+      const wetSoil = input.weather === "หลังฝนตก" && !!input.soilStillWet;
+      const commonFactor = weatherRule.factor * treeFactor * Math.min(ecSafety, wetSoil ? 0 : 1);
+      const perTree = {
+        N: baseVolumePerTree * (rate.N / totalRatio) * nf.N * commonFactor,
+        P: baseVolumePerTree * (rate.P / totalRatio) * nf.P * commonFactor,
+        K: baseVolumePerTree * (rate.K / totalRatio) * nf.K * commonFactor,
+      };
+      const fertPerTreeMl = perTree.N + perTree.P + perTree.K;
+      const stopReasons = [];
+      if (weatherRule.factor === 0) stopReasons.push(weatherRule.description);
+      if (wetSoil) stopReasons.push("ดินยังแฉะ มีน้ำขัง หรือระบายน้ำไม่ทัน");
+      if (treeFactor === 0) stopReasons.push(treeRule.description);
+      (input.extraStops || []).forEach((s) => stopReasons.push(s));
+      const uniqueStops = Array.from(new Set(stopReasons));
+      const isStop = commonFactor === 0 || uniqueStops.length > 0;
+      const waterFactor = Number.isFinite(input.waterFactor) && input.waterFactor >= 0 ? input.waterFactor : 1;
+      const efficiency = input.irrigationEfficiency > 0 ? input.irrigationEfficiency : 90;
+      const baseWater = input.baseWaterPerSqm > 0 ? input.baseWaterPerSqm : 5;
+      const waterPerTreeL = isStop ? 0 : canopyArea * baseWater * (100 / efficiency) * commonFactor * waterFactor;
+      return {
+        rate, totalRatio, canopyArea, commonFactor, perTree, waterFactor, isStop, stopReasons: uniqueStops, waterPerTreeL, nutrientFactors: nf,
+        fertPerTreeMl: isStop ? 0 : fertPerTreeMl, fertTotalMl: isStop ? 0 : fertPerTreeMl * input.treeCount,
+        weatherDescription: weatherRule.description, treeDescription: treeRule.description, advice,
+      };
+    }
+
+    // ======== ฐานความรู้การตีความผลวิเคราะห์ดิน ========
+    // t = ค่าขอบเขตแต่ละระดับ (เรียงน้อย->มาก), labels/status มีจำนวน t.length+1 ช่อง; min/max ใช้วาดมาตรวัด
+    // เกณฑ์เป็นค่าอ้างอิงเชิงปฏิบัติ (ดูหัวข้อ “แหล่งอ้างอิงและข้อจำกัด”) ไม่ใช่ตารางทางการของทุเรียน
+    const SOIL = {
+      pH: { name: "ความเป็นกรด-ด่าง (pH)", unit: "", prio: 1, id: "sPH", dec: 1, min: 3, max: 9, t: [4.5, 5.5, 6.6, 7.6],
+        labels: ["กรดจัด", "เป็นกรด", "เหมาะสม", "ด่างเล็กน้อย", "ด่าง"], status: ["bad", "warn", "ok", "warn", "bad"], target: "5.5–6.5" },
+      EC: { name: "ความเค็ม (EC)", unit: "dS/m", prio: 2, id: "sEC", dec: 2, min: 0, max: 6, t: [1, 2, 4],
+        labels: ["ปกติ", "เริ่มสูง", "สูง", "วิกฤต"], status: ["ok", "warn", "bad", "bad"], target: "< 1" },
+      OM: { name: "อินทรียวัตถุ (OM)", unit: "%", prio: 3, id: "sOM", dec: 1, min: 0, max: 6, t: [1.5, 3.5],
+        labels: ["ต่ำ", "ปานกลาง", "สูง"], status: ["warn", "ok", "ok"], target: "≥ 2.5–3.5" },
+      N: { name: "ไนโตรเจนทั้งหมด (Total N)", unit: "%", prio: 4, dec: 3, min: 0, max: 0.3, t: [0.1, 0.2],
+        labels: ["ต่ำ", "ปานกลาง", "สูง"], status: ["warn", "ok", "ok"], target: "0.10–0.20" },
+      P: { name: "ฟอสฟอรัส (P, Bray II)", unit: "mg/kg", prio: 4, id: "sP", dec: 1, min: 0, max: 90, t: [10, 40, 60],
+        labels: ["ต่ำ", "เหมาะสม", "สูง", "สะสมมากเกิน"], status: ["warn", "ok", "warn", "bad"], target: "10–40" },
+      K: { name: "โพแทสเซียม (K)", unit: "mg/kg", prio: 4, id: "sK", dec: 0, min: 0, max: 375, t: [60, 150, 250],
+        labels: ["ต่ำ", "เหมาะสม", "สูง", "สูงมาก"], status: ["warn", "ok", "warn", "bad"], target: "60–150" },
+      Ca: { name: "แคลเซียม (Ca)", unit: "mg/kg", prio: 5, id: "sCa", dec: 0, min: 0, max: 4500, t: [500, 3000],
+        labels: ["ต่ำ", "เหมาะสม", "สูง"], status: ["warn", "ok", "warn"], target: "500–3,000" },
+      Mg: { name: "แมกนีเซียม (Mg)", unit: "mg/kg", prio: 5, id: "sMg", dec: 0, min: 0, max: 450, t: [60, 300],
+        labels: ["ต่ำ", "เหมาะสม", "สูง"], status: ["warn", "ok", "warn"], target: "60–300" },
+      Zn: { name: "สังกะสี (Zn, DTPA)", unit: "mg/kg", prio: 6, id: "sZn", dec: 1, min: 0, max: 30, t: [0.8, 20],
+        labels: ["ต่ำ", "เพียงพอ", "สูงเกิน"], status: ["warn", "ok", "bad"], target: "0.8–20" },
+      B: { name: "โบรอน (B, น้ำร้อน)", unit: "mg/kg", prio: 6, id: "sB", dec: 2, min: 0, max: 2.5, t: [0.3, 1.5],
+        labels: ["ต่ำ", "เพียงพอ", "สูงเกิน"], status: ["warn", "ok", "bad"], target: "0.3–1.5" },
+    };
+    const MEQ = { K: 391, Ca: 200, Mg: 121.5 }; // mg/kg ต่อ 1 cmol(+)/kg
+
+    const $ = (s, r) => (r || document).querySelector(s);
+    const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const fmt = (n, d = 0) => Number(n).toLocaleString("th-TH", { minimumFractionDigits: d, maximumFractionDigits: d });
+    const fmtVolume = (ml) => (ml >= 1000 ? fmt(ml / 1000, 2) + " ลิตร" : fmt(ml, 0) + " มล.");
+    const val = (id) => { const v = parseFloat($("#" + id).value); return Number.isFinite(v) ? v : null; };
+    const store = {
+      get(k, d) { try { const v = JSON.parse(localStorage.getItem("cal2_" + k)); return v == null ? d : v; } catch (e) { return d; } },
+      set(k, v) { try { localStorage.setItem("cal2_" + k, JSON.stringify(v)); } catch (e) { /* ใช้งานต่อได้แม้เก็บค่าไม่ได้ */ } },
+    };
+    let toastTimer;
+    function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1800); }
+
+    // ======== วิเคราะห์ดิน ========
+    function readSoil() {
+      const v = {};
+      Object.keys(SOIL).forEach((k) => { if (SOIL[k].id) v[k] = val(SOIL[k].id); });
+      v.CEC = val("sCEC");
+      v.CN = val("sCN");
+      v.N = val("sN");
+      let nDerived = false;
+      if (v.N == null && v.OM != null && v.CN != null && v.CN > 0) { v.N = (v.OM * 0.58) / v.CN; nDerived = true; }
+      return { v, nDerived };
+    }
+    const levelIdx = (def, x) => def.t.filter((b) => x >= b).length;
+
+    // ctx: { area, trees } ; kg(rate) => ข้อความ "x กก./ต้น (รวม y กก.)"
+    function adviceFor(key, idx, v, lv, ctx) {
+      const A = [];
+      const kg = (rate) => `${fmt(ctx.area * rate, 1)} กก./ต้น (รวม ${fmt(ctx.area * rate * ctx.trees, 0)} กก.)`;
+      const add = (text) => A.push({ k: "add", text }), cut = (text) => A.push({ k: "cut", text }), chk = (text) => A.push({ k: "chk", text }), stp = (text) => A.push({ k: "stp", text });
+      const mgHigh = lv.Mg != null && lv.Mg >= 2, mgLow = lv.Mg === 0;
+      switch (key) {
+        case "pH":
+          if (idx <= 1) {
+            const mat = mgHigh ? "หินปูนบด/ปูนขาวการเกษตร (Ca)" : "โดโลไมต์ (Ca + Mg)";
+            add(`ปรับ pH ด้วย${mat} ประมาณ ${kg(idx === 0 ? 0.1 : 0.05)} (คิดจากพื้นที่ทรงพุ่ม) แบ่งใส่ 2 ครั้ง ห่างกัน 3–4 สัปดาห์ หว่านใต้ทรงพุ่มแล้วพรวนกลบ`);
+            add("ใส่ปูนห่างจากปุ๋ยยูเรีย/แอมโมเนียมอย่างน้อย 1–2 สัปดาห์ เพื่อไม่ให้ไนโตรเจนสูญเสียเป็นแอมโมเนีย");
+            chk("pH ต่ำทำให้ Al และ Mn ละลายออกมามาก รากเสียหาย และ P ถูกตรึง — เก็บตัวอย่างดินตรวจซ้ำหลังใส่ปูน 3–6 เดือน");
+            if (idx === 0) chk("pH < 4.5 ควรเฝ้าระวังโรครากเน่าโคนเน่าร่วมด้วย (ดินกรดจัด ระบายน้ำไม่ดี)");
+          } else if (idx >= 3) {
+            cut("งดใส่ปูน โดโลไมต์ ขี้เถ้า และปุ๋ยที่ทำให้ดินเป็นด่าง");
+            add("เติมอินทรียวัตถุ และใช้ปุ๋ยที่มีฤทธิ์เป็นกรด เช่น แอมโมเนียมซัลเฟต หรือกำมะถันผง (ใส่เป็นช่วงเล็ก ๆ)");
+            chk("pH สูงทำให้ Fe, Zn, Mn, B ดูดใช้ยาก — พิจารณาฉีดพ่นจุลธาตุทางใบ และตรวจคุณภาพน้ำ (ความกระด้าง)");
+          }
+          break;
+        case "EC":
+          if (idx === 1) chk("EC เริ่มสูง: ระวังปุ๋ยเคมีสะสมและน้ำชลประทานเค็ม ตรวจ EC ของน้ำและปุ๋ยน้ำที่จ่าย");
+          if (idx === 2) {
+            cut("ระบบลดปริมาณปุ๋ยน้ำรวมลง 25% โดยอัตโนมัติ");
+            add("ให้น้ำล้างเกลือ (ให้น้ำปริมาณมากต่อเนื่อง) ในจังหวะที่ระบายน้ำดี ไม่ให้น้ำขัง");
+            add("เปลี่ยนแหล่ง K จาก KCl (มีคลอไรด์) เป็น K₂SO₄ หรือ KNO₃ และเติมอินทรียวัตถุเพื่อลดผลของเกลือ");
+          }
+          if (idx === 3) {
+            stp("EC วิกฤต ระงับการจ่ายปุ๋ยเคมีทางน้ำทั้งหมดจนกว่าจะล้างเกลือและตรวจซ้ำ");
+            add("ให้น้ำล้างเกลือหลายรอบ ตรวจ EC ของน้ำที่ใช้ (น้ำกร่อย/น้ำเค็มรุกล้ำ) แล้วตรวจดินซ้ำก่อนกลับมาให้ปุ๋ย");
+          }
+          break;
+        case "OM":
+          if (idx === 0) {
+            add(`เพิ่มอินทรียวัตถุ: ปุ๋ยหมัก/ปุ๋ยคอกหมักสลายตัวดีแล้ว ประมาณ ${kg(0.2)} ต่อปี แบ่งใส่ 2–3 ครั้ง วางรอบใต้ทรงพุ่ม`);
+            add("คลุมโคนด้วยเศษใบไม้/ฟางหนา 5–10 ซม. (เว้นห่างโคนต้น) ช่วยกักน้ำและเพิ่ม OM ระยะยาว");
+            chk("OM ต่ำ: CEC และการอุ้มน้ำต่ำ ปุ๋ยชะล้างง่าย — ควรแบ่งให้ปุ๋ยน้ำเป็นรอบถี่ ปริมาณน้อยต่อครั้ง");
+            chk("หลีกเลี่ยงปุ๋ยคอกสดหรือขี้ไก่สดชิดราก เสี่ยงรากไหม้และเกลือสูง");
+          }
+          break;
+        case "N":
+          if (idx === 0) {
+            add("ระบบเพิ่มสัดส่วน N ในปุ๋ยน้ำขึ้น 25% (แบ่งจ่ายหลายครั้ง) · แหล่ง N: ยูเรีย/แอมโมเนียมไนเตรต/ปุ๋ยน้ำสูตรนำ N");
+            add("เพิ่ม OM เพื่อให้ดินปลดปล่อย N ได้เองต่อเนื่อง");
+          } else if (idx === 2) {
+            cut("ระบบลด N ในปุ๋ยน้ำลง 25% — ระวัง N มากเกินทำให้แตกใบอ่อนง่าย/ออกดอกยาก/ผลคุณภาพต่ำ");
+          }
+          break;
+        case "P":
+          if (idx === 0) {
+            add("ระบบเพิ่ม P ในปุ๋ยน้ำขึ้น 25% · แหล่ง P สำหรับให้ทางน้ำ: MAP (12-61-0) หรือสูตร P สูง; ทางดิน: ทริปเปิลซูเปอร์ฟอสเฟต (0-46-0)");
+            if (lv.pH != null && lv.pH <= 1) add("pH ต่ำตรึง P: แก้ pH ให้ 5.5–6.5 ก่อน จะทำให้ P ที่ใส่ถูกใช้ได้มากขึ้น");
+            else chk("P ต่ำแต่ pH ปกติ: ตรวจ OM และสภาพรากร่วมด้วย");
+          } else if (idx === 2) {
+            cut("ระบบลด P ในปุ๋ยน้ำลง 50% เลือกสูตรที่ P ต่ำ");
+          } else if (idx === 3) {
+            stp("P สะสมมากเกิน (> 60 mg/kg) งดปุ๋ยที่มี P ทุกชนิดอย่างน้อย 1 ฤดูกาล แล้วตรวจซ้ำ");
+            chk("P สูงมากไปยับยั้งการดูดใช้ Zn และ Fe — สังเกตอาการใบเหลือง/ใบเล็ก และพิจารณาฉีดพ่น Zn ทางใบ");
+          }
+          break;
+        case "K":
+          if (idx === 0) {
+            add("ระบบเพิ่ม K ในปุ๋ยน้ำขึ้น 25% · แหล่ง K: โพแทสเซียมซัลเฟต (0-0-50) หรือโพแทสเซียมไนเตรต (13-0-46)");
+            add(`ถ้าต้องการเสริมทางดิน: K₂SO₄ ประมาณ ${kg(0.02)} แบ่ง 2–3 ครั้ง (K ชะล้างง่ายในดินทราย)`);
+            if (lv.EC != null && lv.EC >= 1) chk("EC สูง: เลี่ยง KCl เลือก K₂SO₄/KNO₃");
+          } else if (idx === 2) {
+            cut("ระบบลด K ในปุ๋ยน้ำลง 25%");
+            chk("K สูงแย่งการดูดใช้ Mg และ Ca — ตรวจใบว่ามี Mg/Ca ขาดหรือไม่");
+          } else if (idx === 3) {
+            cut("K สูงมาก ระบบลด K ในปุ๋ยน้ำลง 50% และงดปุ๋ย K ทางดิน");
+            add("เสริม Mg และ Ca เพื่อสร้างสมดุล (ดูหัวข้อ Ca/Mg)");
+          }
+          break;
+        case "Ca":
+          if (idx === 0) {
+            if (lv.pH != null && lv.pH <= 1) add("pH ต่ำอยู่แล้ว: ใช้ปูน/โดโลไมต์ตามข้อ pH จะเพิ่ม Ca ไปพร้อมกัน ไม่ต้องใส่ยิปซัมซ้ำ");
+            else add(`ใส่ยิปซัม (CaSO₄) ประมาณ ${kg(0.05)} ให้ Ca โดยไม่ปรับ pH หรือใช้แคลเซียมไนเตรตทางน้ำ`);
+            chk("แคลเซียมไนเตรตห้ามผสมในถังเดียวกับปุ๋ยที่มีซัลเฟต/ฟอสเฟต (ตกตะกอนอุดหัวจ่าย) — แยกถังหรือแยกรอบ");
+            chk("Ca สำคัญต่อคุณภาพผลและเปลือก แต่เคลื่อนย้ายในต้นช้า ควรให้สม่ำเสมอ และเสริมทางใบได้ในระยะติดผล");
+          } else if (idx === 2) {
+            cut("งดปูน ยิปซัม แคลเซียมไนเตรต");
+            chk("Ca สูงมากอาจแย่งการดูดใช้ K และ Mg — ตรวจอาการขาด Mg/K");
+          }
+          break;
+        case "Mg":
+          if (idx === 0) {
+            if (lv.pH != null && lv.pH <= 1) add("ใช้โดโลไมต์ตามข้อ pH (ให้ทั้ง Ca และ Mg)");
+            else add(`ใส่เกลือเอปซอม MgSO₄·7H₂O ประมาณ ${kg(0.02)} ทางดิน หรือละลายให้ทางน้ำ`);
+            add("เสริมทางใบ: MgSO₄ 10–20 กรัม/ลิตร ฉีดพ่นช่วงแตกใบอ่อน 2–3 ครั้ง ห่างกัน 2 สัปดาห์");
+            if (lv.K != null && lv.K >= 2) chk("K สูงแย่ง Mg: ลดปุ๋ย K ควบคู่ไปด้วย");
+          } else if (idx === 2) {
+            cut("งดโดโลไมต์และเอปซอม; ถ้าต้องปรับ pH ให้ใช้หินปูนบดแทน");
+            chk("Mg สูงทำให้ดินแน่น ระบายน้ำเลว และกด Ca/K — ใช้ยิปซัมช่วยปรับสมดุล Ca:Mg");
+          }
+          break;
+        case "Zn":
+          if (idx === 0) {
+            add("ฉีดพ่นซิงค์ซัลเฟต (ZnSO₄) 2–3 กรัม/ลิตร หรือ Zn-EDTA ตามฉลาก ช่วงแตกใบอ่อน 2 ครั้ง ห่างกัน 2 สัปดาห์");
+            add(`หรือใส่ทางดิน ZnSO₄ ประมาณ ${kg(0.01)} ร่วมกับอินทรียวัตถุ`);
+            if (lv.P != null && lv.P >= 2) chk("P สูงกด Zn: งดปุ๋ย P แล้วการดูดใช้ Zn จะดีขึ้น");
+          } else if (idx === 2) stp("Zn สูงเกิน: งดปุ๋ยและสารเสริมที่มี Zn ตรวจที่มาของการปนเปื้อน (เช่น ปุ๋ยคอก/สารป้องกันกำจัดโรค)");
+          break;
+        case "B":
+          if (idx === 0) {
+            add("ฉีดพ่นโบรอน (โซลูบอร์/กรดบอริก) 0.5–1 กรัม/ลิตร ก่อนออกดอกและช่วงติดผลเล็ก 1–2 ครั้ง");
+            chk("B มีช่วงพอดีแคบ ใส่เกินเป็นพิษได้ง่าย อย่าเพิ่มอัตราเอง และไม่ผสมเกินฉลาก");
+            chk("B เคลื่อนย้ายในต้นน้อย ขาดแล้วส่งผลต่อการติดผลและการแตกของผล");
+          } else if (idx === 2) stp("B สูงเกิน: งดปุ๋ย/สารที่มีโบรอน ให้น้ำล้างโบรอนในดินที่ระบายน้ำดี และสังเกตขอบใบไหม้");
+          break;
+      }
+      return A;
+    }
+
+    function analyzeSoil(parsed, ctx) {
+      const { v, nDerived } = parsed;
+      const items = [], lv = {};
+      Object.keys(SOIL).forEach((k) => {
+        if (v[k] == null) return;
+        lv[k] = levelIdx(SOIL[k], v[k]);
+      });
+      Object.keys(SOIL).forEach((k) => {
+        if (v[k] == null) return;
+        const def = SOIL[k], idx = lv[k];
+        items.push({ key: k, def, value: v[k], idx, status: def.status[idx], label: def.labels[idx], derived: k === "N" && nDerived, actions: adviceFor(k, idx, v, lv, ctx) });
+      });
+      items.sort((a, b) => a.def.prio - b.def.prio);
+
+      // ปัจจัยปรับปริมาณปุ๋ยน้ำตามผลดิน
+      const factors = { N: 1, P: 1, K: 1 };
+      if (lv.N != null) factors.N = [1.25, 1, 0.75][lv.N];
+      if (lv.P != null) factors.P = [1.25, 1, 0.5, 0][lv.P];
+      if (lv.K != null) factors.K = [1.25, 1, 0.75, 0.5][lv.K];
+      let ecSafety = 1; const stops = [];
+      if (lv.EC === 2) ecSafety = 0.75;
+      if (lv.EC === 3) { ecSafety = 0; stops.push(`ค่า EC (${fmt(v.EC, 2)} dS/m) สูงวิกฤต ห้ามจ่ายปุ๋ยเพื่อป้องกันรากเสียหาย`); }
+
+      // สัดส่วนไอออน
+      const ratios = [];
+      if (v.Ca != null && v.Mg != null && v.Mg > 0) {
+        const r = (v.Ca / MEQ.Ca) / (v.Mg / MEQ.Mg);
+        let st = "ok", note = "อยู่ในช่วงที่ยอมรับได้ (ประมาณ 2–8)";
+        if (r > 8) { st = "bad"; note = "Ca:Mg > 8 เสี่ยงขาด Mg — เสริม Mg (เอปซอม/โดโลไมต์) และลดการใส่ Ca เพิ่ม"; }
+        else if (r < 2) { st = "warn"; note = "Ca:Mg < 2 Mg เด่น ดินอาจแน่น/ระบายน้ำเลว และเสี่ยงขาด Ca — เสริมยิปซัม และงดโดโลไมต์"; }
+        ratios.push({ name: "Ca : Mg (meq)", value: fmt(r, 1) + " : 1", st, note });
+      }
+      if (v.K != null && v.Mg != null && v.Mg > 0) {
+        const r = (v.K / MEQ.K) / (v.Mg / MEQ.Mg);
+        let st = "ok", note = "สมดุลดี";
+        if (r > 1) { st = "bad"; note = "K:Mg สูง K แย่งการดูดใช้ Mg — ลดปุ๋ย K และเสริม Mg"; }
+        else if (r < 0.1) { st = "warn"; note = "K ต่ำเมื่อเทียบกับ Mg — เสริม K ตามแผนปุ๋ยน้ำ"; }
+        ratios.push({ name: "K : Mg (meq)", value: fmt(r, 2) + " : 1", st, note });
+      }
+      if (v.CEC != null && v.CEC > 0) {
+        const bs = ((v.K || 0) / MEQ.K + (v.Ca || 0) / MEQ.Ca + (v.Mg || 0) / MEQ.Mg) / v.CEC * 100;
+        const have = v.K != null && v.Ca != null && v.Mg != null;
+        if (have) ratios.push({ name: "อิ่มตัวด้วยเบส (K+Ca+Mg)/CEC", value: fmt(bs, 0) + " %", st: bs < 35 ? "warn" : bs > 100 ? "warn" : "ok",
+          note: bs < 35 ? "เบสต่ำ ดินเสื่อม/กรด — แก้ pH และเติม Ca/Mg" : bs > 100 ? "เกิน 100% อาจมีเกลือหรือค่าวิเคราะห์คลาดเคลื่อน ตรวจกับห้องปฏิบัติการ" : "อยู่ในเกณฑ์ปกติ" });
+        ratios.push({ name: "CEC", value: fmt(v.CEC, 1) + " cmol/kg", st: v.CEC < 5 ? "warn" : "ok",
+          note: v.CEC < 5 ? "CEC ต่ำ (ดินทราย/ดินเสื่อม) อุ้มปุ๋ยน้อย — แบ่งให้ปุ๋ยถี่และน้อยต่อครั้ง เพิ่ม OM" : v.CEC < 10 ? "CEC ปานกลาง–ต่ำ แบ่งให้ปุ๋ยหลายรอบ" : "CEC เพียงพอ อุ้มปุ๋ยได้ดี" });
+      }
+      const counts = { bad: 0, warn: 0, ok: 0 };
+      items.forEach((i) => counts[i.status]++);
+      ratios.forEach((r) => { if (r.st !== "ok") counts[r.st]++; });
+      return { items, ratios, factors, ecSafety, stops, counts, lv, has: items.length > 0 };
+    }
+
+    function gauge(def, x, idx) {
+      const n = def.labels.length, bounds = [def.min, ...def.t, Math.max(def.max, def.t[def.t.length - 1] * 1.25)];
+      const lo = bounds[idx], hi = bounds[idx + 1];
+      const pos = ((idx + Math.min(1, Math.max(0, (x - lo) / (hi - lo)))) / n) * 100;
+      return `<div class="gauge">${def.labels.map((l, i) => `<i class="${def.status[i]} ${i === idx ? "cur" : ""}"></i>`).join("")}<b style="left:${Math.min(99, Math.max(1, pos))}%"></b></div>
+        <div class="gl">${def.labels.map((l) => `<span>${l}</span>`).join("")}</div>`;
+    }
+
+    // ======== สถานะ/แหล่งข้อมูลปรับน้ำ ========
+    const state = { stage: "สร้างชุดใบ", weather: "ปกติ", crisis: [], sources: [], selected: null, forecast: null, fcMsg: "", tab: "fert", customs: store.get("customs", []), showAll: false };
+    const allProducts = () => PRODUCTS.concat(state.customs.map((c) => ({ ...c, custom: true })));
+    const PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#e4edf1"/><path d="M26 10h12v6l5 8v26a4 4 0 0 1-4 4H25a4 4 0 0 1-4-4V24l5-8z" fill="none" stroke="#587079" stroke-width="3" stroke-linejoin="round"/><path d="M24 36h16" stroke="#587079" stroke-width="3"/></svg>');
+    const imgOf = (p) => (p.custom ? PLACEHOLDER : `assets/fert/${p.id}.webp`);
+
+    function buildOptions() {
+      $("#stageOpts").innerHTML = Object.keys(fertilizerRates).map((k) => {
+        const r = fertilizerRates[k];
+        return `<button type="button" class="opt" role="radio" data-stage="${k}"><b>${stageNames[k]}</b><span>N:P:K = ${r.N}:${r.P}:${r.K}</span></button>`;
+      }).join("");
+      $("#weatherOpts").innerHTML = Object.keys(weatherRules).map((k) =>
+        `<button type="button" class="opt" role="radio" data-weather="${k}"><b>${weatherRules[k].label}</b></button>`).join("");
+    }
+    function syncForm() {
+      $$("#stageOpts .opt").forEach((b) => { const on = b.dataset.stage === state.stage; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
+      $$("#weatherOpts .opt").forEach((b) => { const on = b.dataset.weather === state.weather; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
+      $("#weatherHint").textContent = weatherRules[state.weather].hint;
+      const after = state.weather === "หลังฝนตก";
+      $("#wetBox").hidden = !after;
+      if (!after) $("#soilStillWet").checked = false;
+      $$("#crisisChips .chip").forEach((c) => c.classList.toggle("on", state.crisis.includes(c.dataset.crisis)));
+      $$("#srcChips .chip").forEach((c) => c.classList.toggle("on", state.sources.includes(c.dataset.src)));
+      $("#srcForecast").hidden = !state.sources.includes("forecast");
+      $("#srcStation").hidden = !state.sources.includes("station");
+      $$(".tabs [data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === state.tab));
+      $("#pFert").hidden = state.tab !== "fert"; $("#pSoil").hidden = state.tab !== "soil";
+    }
+
+    const SRC = {
+      forecast: { name: "พยากรณ์อากาศ", formula: () => $("#fForecast").value,
+        vars: () => { const d = state.forecast && state.forecast.daily; return d ? { rain: +d.precipitation_probability_max[0], temp: +d.temperature_2m_max[0], et0: +d.et0_fao_evapotranspiration[0] } : null; },
+        labels: { rain: ["โอกาสฝนตก", "%"], temp: ["อุณหภูมิสูงสุด", "°C"], et0: ["ET₀", "มม./วัน"] }, body: "#srcForecastBody" },
+      station: { name: "ค่าวัดในสวน", formula: () => $("#fStation").value,
+        vars: () => { const v = { temp: val("stTemp"), rh: val("stRh"), soil: val("stSoil") }; return v.temp == null && v.rh == null && v.soil == null ? null : { temp: v.temp ?? NaN, rh: v.rh ?? NaN, soil: v.soil ?? NaN }; },
+        labels: { soil: ["ความชื้นดิน", "%"], temp: ["อุณหภูมิ", "°C"], rh: ["ความชื้นสัมพัทธ์", "%"] }, body: "#srcStationBody" },
+    };
+    function evalSource(key) {
+      const vars = SRC[key].vars();
+      if (!vars) return { state: "na" };
+      const r = evalWaterFormula(SRC[key].formula(), vars);
+      return r.ok ? { state: "ok", value: r.value, vars } : { state: "error", error: r.error, vars };
+    }
+    function renderSources() {
+      state.sources.forEach((key) => {
+        const s = SRC[key], r = evalSource(key);
+        let html = "";
+        if (r.state === "na") html = `<span class="muted">${key === "forecast" ? esc(state.fcMsg || "ใส่ตำแหน่งแล้วกด “ดึงพยากรณ์”") : "กรอกค่าอย่างน้อย 1 ช่อง"} · ยังไม่ปรับปริมาณน้ำ</span>`;
+        else {
+          html = Object.entries(s.labels).map(([k, [n, u]]) => `<div class="row between"><span>${n} <code>${k}</code></span><b>${Number.isFinite(r.vars[k]) ? fmt(r.vars[k], 1) + " " + u : "–"}</b></div>`).join("");
+          html += r.state === "ok" ? `<div style="margin-top:6px">ตัวคูณปริมาณน้ำ = <b>${r.value.toFixed(2)}</b></div>` : `<div style="margin-top:6px;color:var(--red)">${esc(r.error)}</div>`;
+        }
+        $(s.body).innerHTML = html;
+      });
+    }
+    function waterFactor() {
+      const rs = state.sources.map((k) => ({ k, r: evalSource(k) }));
+      const bad = rs.find((x) => x.r.state === "error");
+      if (bad) return { error: `${SRC[bad.k].name}: ${bad.r.error}` };
+      const ok = rs.filter((x) => x.r.state === "ok");
+      return { factor: ok.length ? ok.reduce((a, x) => a + x.r.value, 0) / ok.length : 1,
+        details: rs.map((x) => (x.r.state === "ok" ? `${SRC[x.k].name}: ×${x.r.value.toFixed(2)}` : `${SRC[x.k].name}: ไม่มีข้อมูล (ไม่ได้ปรับ)`)) };
+    }
+    async function loadForecast() {
+      const lat = val("lat"), lng = val("lng");
+      if (lat == null || lng == null) { state.fcMsg = "กรุณากรอกละติจูดและลองจิจูด"; return update(); }
+      store.set("loc", { lat, lng });
+      state.fcMsg = "กำลังโหลดพยากรณ์อากาศ…"; update();
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=temperature_2m_max,precipitation_probability_max,et0_fao_evapotranspiration&timezone=Asia%2FBangkok&forecast_days=3`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        state.forecast = await res.json(); state.fcMsg = "";
+      } catch (e) { state.forecast = null; state.fcMsg = "โหลดพยากรณ์อากาศไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่"; }
+      update();
+    }
+
+    // ======== คำนวณและแสดงผล ========
+    let last = null;
+    function update() {
+      renderSources();
+      const diameter = val("canopyDiameter"), trees = val("treeCount");
+      let error = "";
+      if (diameter == null || diameter <= 0) error = "กรอกเส้นผ่านศูนย์กลางทรงพุ่มให้มากกว่า 0 เมตร";
+      else if (trees == null || trees < 1 || !Number.isInteger(trees)) error = "กรอกจำนวนต้นเป็นจำนวนเต็มอย่างน้อย 1 ต้น";
+      const water = error ? null : waterFactor();
+      if (water && water.error) error = "สูตรตัวคูณน้ำผิดพลาด — " + water.error;
+      if (error) {
+        last = null;
+        $("#pFert").innerHTML = `<div class="empty">${esc(error)}</div>`;
+        $("#pSoil").innerHTML = `<div class="empty">${esc(error)}</div>`;
+        $("#barVal").textContent = "–"; $("#soilCnt").hidden = true;
+        return;
+      }
+      const area = Math.PI * Math.pow(diameter / 2, 2);
+      const soil = analyzeSoil(readSoil(), { area, trees });
+      const r = calcFertigation({
+        diameter, treeCount: trees, growthStage: state.stage, weather: state.weather, soilStillWet: $("#soilStillWet").checked,
+        treeCondition: $("#treeCondition").value, crisis: state.crisis, waterFactor: water.factor,
+        baseWaterPerSqm: val("baseWater") ?? DEFAULTS.baseWater, irrigationEfficiency: val("irrEff") ?? DEFAULTS.irrEff,
+        nutrientFactors: soil.factors, ecSafetyFactor: soil.ecSafety, extraStops: soil.stops,
+      });
+      // จัดอันดับปุ๋ยตามสัดส่วนที่ปรับตามดินแล้ว (ถ้าปรับแล้วเป็นศูนย์ทั้งหมดใช้สัดส่วนตามระยะ)
+      const eff = r.perTree.N + r.perTree.P + r.perTree.K > 0 ? { N: r.perTree.N, P: r.perTree.P, K: r.perTree.K } : r.rate;
+      const ranked = rankProducts(eff, allProducts());
+      if (!state.selected || !ranked.some((p) => p.id === state.selected)) state.selected = ranked[0].id;
+      last = { r, soil, trees, diameter, ranked, details: water.details, eff };
+      renderFert(); renderSoil();
+    }
+
+    const matchOf = (p) => Math.max(0, Math.round((1 - p.dist / 0.8) * 100));
+    const matchInfo = (pct) => (pct >= 90 ? ["ใกล้เคียงมาก", "var(--brand)"] : pct >= 70 ? ["ใกล้เคียง", "var(--brand)"] : pct >= 45 ? ["พอใช้ได้", "var(--orange)"] : ["ต่างจากเป้าหมาย", "var(--red)"]);
+    const list = (a) => `<ul class="list">${a.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
+
+    function renderFert() {
+      const { r, soil, trees, diameter, ranked, details, eff } = last;
+      const rate = r.rate, nf = r.nutrientFactors;
+      const tot = eff.N + eff.P + eff.K || 1;
+      const nP = Math.round((eff.N / tot) * 100), pP = Math.round((eff.P / tot) * 100), kP = Math.max(0, 100 - nP - pP);
+      const vol = (ml) => (r.isStop ? "0 มล." : fmtVolume(ml));
+      const adj = (f) => (f === 1 ? "" : `<div class="adj ${f > 1 ? "up" : "down"}">${f === 0 ? "งด" : (f > 1 ? "เพิ่ม " : "ลด ") + "×" + f}</div>`);
+      let h = `<div class="status"><b>สรุปผลคำนวณ</b><span class="badge ${r.isStop ? "stop" : "ok"}">${r.isStop ? "ระงับการจ่าย" : "พร้อมใช้งาน"}</span></div>
+        <div class="small muted">ทรงพุ่ม ${fmt(diameter, 1)} ม. · ${fmt(trees)} ต้น · ${esc(rate.label)}${soil.has ? " · ปรับตามผลดินแล้ว" : ""}</div>`;
+      if (r.isStop) {
+        h += `<div class="notice red"><b>ระงับการจ่ายปุ๋ยชั่วคราว</b> เนื่องจากพบเงื่อนไขที่ไม่ปลอดภัยต่อรากหรือต้น:${list(r.stopReasons)}</div>`;
+      } else {
+        h += `<div class="hero"><div class="sub">ปุ๋ยน้ำต่อต้น</div><div class="big">${esc(fmtVolume(r.fertPerTreeMl))}</div>
+          <div class="sub">ทั้งแปลง ${fmt(trees)} ต้น = <b>${esc(fmtVolume(r.fertTotalMl))}</b></div></div>
+          <div class="kpis"><div class="kpi"><div class="l">น้ำต่อต้น</div><div class="v">${fmt(r.waterPerTreeL, 0)}<small> ลิตร</small></div></div>
+          <div class="kpi"><div class="l">น้ำทั้งแปลง</div><div class="v">${fmt(r.waterPerTreeL * trees, 0)}<small> ลิตร</small></div></div></div>`;
+      }
+      h += `<div class="sec">สัดส่วนเป้าหมายตามระยะ N : P : K = ${rate.N} : ${rate.P} : ${rate.K}${soil.has ? ` <span class="small muted">→ หลังปรับตามดิน ${nP} : ${pP} : ${kP} (%)</span>` : ""}</div>
+        <div class="npk"><div class="nn" style="width:${nP}%">${nP >= 8 ? "N " + nP + "%" : ""}</div><div class="np" style="width:${pP}%">${pP >= 8 ? "P " + pP + "%" : ""}</div><div class="nk" style="width:${kP}%">${kP >= 8 ? "K " + kP + "%" : ""}</div></div>
+        <div class="groups" style="margin-top:10px">
+          <div class="kpi"><div class="l">N ไนโตรเจน</div><div class="v">${vol(r.perTree.N)}</div><div class="small muted">รวม ${vol(r.perTree.N * trees)}</div>${adj(nf.N)}</div>
+          <div class="kpi"><div class="l">P ฟอสฟอรัส</div><div class="v">${vol(r.perTree.P)}</div><div class="small muted">รวม ${vol(r.perTree.P * trees)}</div>${adj(nf.P)}</div>
+          <div class="kpi"><div class="l">K โพแทสเซียม</div><div class="v">${vol(r.perTree.K)}</div><div class="small muted">รวม ${vol(r.perTree.K * trees)}</div>${adj(nf.K)}</div></div>`;
+
+      if (!r.isStop) {
+        const top = ranked.slice(0, 3), sel = ranked.find((p) => p.id === state.selected);
+        const shown = state.showAll ? ranked : top.concat(top.includes(sel) ? [] : [sel]);
+        h += `<div class="sec">ปุ๋ยที่ควรใช้ <span class="small muted">(เทียบกับสัดส่วนหลังปรับตามดิน)</span></div>` +
+          shown.map((p) => {
+            const pct = matchOf(p), [txt, col] = matchInfo(pct);
+            return `<button type="button" class="prod ${p.id === state.selected ? "on" : ""}" data-pid="${esc(p.id)}" aria-pressed="${p.id === state.selected}">
+              <img src="${esc(imgOf(p))}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${PLACEHOLDER}'">
+              <div class="grow"><div class="nm">${esc(p.name)}${p.id === ranked[0].id ? ' <span class="badge ok">แนะนำ</span>' : ""}</div>
+              <div class="small muted">N-P-K ${p.n}-${p.p}-${p.k} · <span style="color:${col}">${pct}% ${txt}</span></div>
+              <div class="bar2"><i style="width:${pct}%;background:${col}"></i></div></div></button>`;
+          }).join("") +
+          `<div class="actions" style="margin-top:10px"><button type="button" class="btn ghost sm" id="moreProd">${state.showAll ? "ย่อรายการ" : "ดูสูตรทั้งหมด (" + ranked.length + ")"}</button>
+           <button type="button" class="btn ghost sm" id="addProd">+ เพิ่มปุ๋ยของคุณ</button></div><div id="addSlot"></div>`;
+      }
+      if (r.advice.length) h += `<div class="notice"><b>คำแนะนำและข้อควรระวัง</b>${list(r.advice)}</div>`;
+      if (soil.has) {
+        const bad = soil.counts.bad + soil.counts.warn;
+        h += `<div class="notice ${soil.counts.bad ? "red" : bad ? "" : "green"}"><b>ผลวิเคราะห์ดิน:</b> ${bad ? `พบ ${bad} รายการที่ควรจัดการ — ดูแท็บ “วิเคราะห์ดิน” สำหรับสิ่งที่ควรเพิ่ม/ลดและปริมาณ` : "ค่าที่กรอกอยู่ในเกณฑ์ปกติ"}</div>`;
+      }
+      h += `<div class="sec">ข้อมูลประกอบการคำนวณ</div>${list([
+        `ระยะพืช: ${rate.label}`, `สภาพอากาศ: ${r.weatherDescription}`,
+        `ข้อมูลประกอบน้ำ: ${details.join(" · ") || "ไม่ได้เลือก"}`, ...(details.length ? [`ตัวคูณปริมาณน้ำ: ×${r.waterFactor.toFixed(2)}`] : []),
+        `สภาพต้น: ${r.treeDescription}`, `พื้นที่ทรงพุ่ม ${fmt(r.canopyArea, 1)} ตร.ม./ต้น (รวม ${fmt(r.canopyArea * trees, 0)} ตร.ม.)`,
+        `ผลวิเคราะห์ดิน: ${soil.has ? "นำมาปรับ N, P, K และความปลอดภัยของรากแล้ว" : "ไม่ได้ระบุ (ใช้สัดส่วนมาตรฐาน)"}`,
+      ])}<div class="actions"><button class="btn" id="copyBtn" type="button">คัดลอกสรุป</button><button class="btn ghost" id="printBtn" type="button">พิมพ์</button><button class="btn ghost" id="resetBtn" type="button">คำนวณใหม่</button></div>`;
+      $("#pFert").innerHTML = h;
+      $("#barVal").textContent = r.isStop ? "ระงับการจ่าย" : fmtVolume(r.fertPerTreeMl);
+    }
+
+    const ACT_LABEL = { add: "เพิ่ม", cut: "ลด/งด", chk: "ตรวจ", stp: "หยุด" };
+    function renderSoil() {
+      const { soil } = last;
+      const cnt = $("#soilCnt"), issues = soil.counts.bad + soil.counts.warn;
+      cnt.hidden = !issues; cnt.textContent = issues;
+      if (!soil.has) {
+        $("#pSoil").innerHTML = `<div class="empty">ยังไม่ได้กรอกผลวิเคราะห์ดิน<br><span class="small">กรอกในขั้นที่ 4 (หรือกด “ใส่ค่าตัวอย่าง”) เพื่อดูการประเมินและคำแนะนำ</span></div>${refHtml()}`;
+        return;
+      }
+      const todo = soil.items.filter((i) => i.status !== "ok").map((i) => {
+        const first = i.actions.find((a) => a.k === "add" || a.k === "stp" || a.k === "cut") || i.actions[0];
+        return `<li><div><b>${esc(i.def.name)}</b> <span class="badge ${i.status}">${i.label}</span><div class="small">${first ? esc(first.text) : ""}</div></div></li>`;
+      });
+      const ratioBad = soil.ratios.filter((x) => x.st !== "ok").map((x) => `<li><div><b>${esc(x.name)}</b> <span class="badge ${x.st}">${x.value}</span><div class="small">${esc(x.note)}</div></div></li>`);
+      let h = `<div class="status"><b>ผลประเมินดิน</b><span class="badge ${soil.counts.bad ? "bad" : soil.counts.warn ? "warn" : "ok"}">${soil.counts.bad ? "มีค่าวิกฤต" : soil.counts.warn ? "ควรปรับปรุง" : "ปกติ"}</span></div>
+        <div class="score"><div class="kpi bad"><div class="l">วิกฤต/เกินมาก</div><div class="v">${soil.counts.bad}</div></div>
+          <div class="kpi warn"><div class="l">ควรปรับปรุง</div><div class="v">${soil.counts.warn}</div></div>
+          <div class="kpi good"><div class="l">เหมาะสม</div><div class="v">${soil.counts.ok}</div></div></div>`;
+      if (todo.length || ratioBad.length) h += `<div class="sec">ลำดับการแก้ไข (ทำจากบนลงล่าง)</div><ol class="todo">${todo.join("")}${ratioBad.join("")}</ol>
+        <div class="small muted" style="margin-top:8px">หลักการ: ปรับ pH → แก้เกลือ → เติม OM → ปรับธาตุหลัก (ผ่านปุ๋ยน้ำ) → เสริมธาตุรอง → จุลธาตุทางใบ · ปรับ pH ให้ได้ก่อนใส่ธาตุอื่น เพราะ pH กำหนดการละลายของธาตุทั้งหมด</div>`;
+      else h += `<div class="notice green">ทุกค่าที่กรอกอยู่ในเกณฑ์เหมาะสม คงแผนปุ๋ยตามระยะพืช และตรวจดินซ้ำปีละ 1 ครั้ง</div>`;
+
+      h += `<div class="sec">รายละเอียดรายธาตุ</div>`;
+      h += soil.items.map((i) => {
+        const d = i.def;
+        const acts = i.actions.length ? i.actions.map((a) => `<div class="act"><span class="t ${a.k}">${ACT_LABEL[a.k]}</span><span>${esc(a.text)}</span></div>`).join("")
+          : `<div class="small muted" style="margin-top:8px">${i.status === "ok" ? "อยู่ในเกณฑ์เหมาะสม ไม่ต้องปรับ — คงการจัดการเดิม" : ""}</div>`;
+        return `<div class="sp ${i.status}"><div class="hd"><span class="nm">${esc(d.name)}</span><span class="val">${fmt(i.value, d.dec)} <small>${d.unit}${i.derived ? " (ประมาณจาก OM, C:N)" : ""}</small></span></div>
+          <div class="small"><span class="badge ${i.status}">${i.label}</span> <span class="muted">ช่วงเหมาะสม ${d.target} ${d.unit}</span></div>
+          ${gauge(d, i.value, i.idx)}${acts}</div>`;
+      }).join("");
+
+      if (soil.ratios.length) h += `<div class="sec">สัดส่วนและความสมดุลของธาตุ</div>` + soil.ratios.map((x) => `<div class="ratio"><div><b>${esc(x.name)}</b><div class="small muted">${esc(x.note)}</div></div><span class="badge ${x.st}">${x.value}</span></div>`).join("");
+      h += `<div class="notice"><b>ผลต่อปริมาณปุ๋ยน้ำ</b>${list([
+        `N ×${soil.factors.N} · P ×${soil.factors.P} · K ×${soil.factors.K}${soil.ecSafety < 1 ? ` · ความปลอดภัยราก (EC) ×${soil.ecSafety}` : ""}`,
+        "ธาตุที่ต่ำ: เพิ่มได้สูงสุด 25% ต่อรอบ (ไม่เร่งหนักเพราะรากรับได้จำกัด) ให้แบ่งจ่ายหลายครั้ง · ธาตุที่สูง: ลดหรืองดตามระดับ",
+        "ปริมาณปูน/ยิปซัม/เอปซอม/ปุ๋ยอินทรีย์เป็นค่าประมาณจากพื้นที่ทรงพุ่ม ควรปรับตามชนิดดิน (ทราย/เหนียว) และตรวจดินซ้ำ",
+      ])}</div>` + refHtml();
+      $("#pSoil").innerHTML = h;
+    }
+
+    function refHtml() {
+      const rows = Object.keys(SOIL).map((k) => { const d = SOIL[k]; return `<tr><td>${esc(d.name)}</td><td>${d.labels.map((l, i) => l + (i < d.t.length ? " &lt; " + d.t[i] : "")).join(" · ")}</td></tr>`; }).join("");
+      return `<details class="more"><summary>แหล่งอ้างอิงและข้อจำกัดของเกณฑ์</summary>
+        <div class="notice" style="margin-top:10px"><b>ข้อจำกัดสำคัญ</b> ผู้พัฒนาค้นไม่พบตารางเกณฑ์ดินสำหรับทุเรียนฉบับทางการที่เปิดเผยเต็มรูปแบบ เกณฑ์ในหน้านี้จึงเป็นค่าอ้างอิงเชิงปฏิบัติจากแนวทางตีความผลดินเขตร้อน/ไทยทั่วไปที่ผสมกับงานวิจัยทุเรียนที่ระบุด้านล่าง ใช้เป็นแนวทางเบื้องต้น และควรยืนยันกับผลวิเคราะห์ใบ ห้องปฏิบัติการ หรือเจ้าหน้าที่กรมวิชาการเกษตร/กรมพัฒนาที่ดินก่อนตัดสินใจใส่ปุ๋ยปริมาณมาก</div>
+        <div class="sec">เกณฑ์ที่ใช้ในหน้านี้</div><table class="ref"><tbody>${rows}</tbody></table>
+        <div class="sec">เกณฑ์ใบทุเรียน (ใช้ยืนยันผลดินได้ดีที่สุด)</div>
+        <div class="small">N 20–24 · P 1.5–2.5 · K 15–25 · Ca 17–25 · Mg 2.5–5.0 g/kg · Fe 40–150 · Mn 50–120 · Cu 10–25 · Zn 10–30 · B 30–70 mg/kg (ใบที่ 3–4 ของกิ่งที่แตกใบเพสลาดแล้ว อายุ 5–7 เดือน)</div>
+        <ul class="list">
+          <li><a href="https://crops.confex.com/crops/wc2006/techprogram/P17522.HTM" target="_blank" rel="noopener">Poovarodom et al. — เกณฑ์วิเคราะห์ใบทุเรียน และสำรวจดินปลูกทุเรียนภาคตะวันออก: ดิน &gt; 90% มี pH &lt; 5.5, K/Ca/Mg ต่ำ, P สะสม &gt; 60 mg/kg ในดินกว่าครึ่ง</a></li>
+          <li><a href="https://ph01.tci-thaijo.org/index.php/Scipsru/article/download/262088/175715/1056048" target="_blank" rel="noopener">วารสาร PSRU — P ที่เป็นประโยชน์ในดินปลูกทุเรียน ค่าเฉลี่ย 27–34 mg/kg มีเพียง ~18% ที่อยู่ในเกณฑ์เหมาะสม</a></li>
+          <li><a href="https://doi1.nrct.go.th/ListDoi/listDetail/10.14456%2Fthaidoa-agres.1997.5" target="_blank" rel="noopener">กรมวิชาการเกษตร — ดินระดับกลางมี OM 1.5–3.5% และตอบสนองต่อปุ๋ยสูงเมื่อ OM &lt; 1.69%</a></li>
+          <li><a href="https://thealmonddoctor.com/soil-test-part-3-secondary-plant-nutrients-calcium-magnesium-and-sulfur/" target="_blank" rel="noopener">UC Extension (Fulton &amp; Meyer) — ไม้ผลยืนต้น: Ca:Mg &gt; 8:1 มีโอกาสขาด Mg</a></li>
+          <li><a href="https://geo.libretexts.org/Bookshelves/Soil_Science/Building_Soils_for_Better_Crops_-_Ecological_Management_for_Healthy_Soils_4e_(Magdoff_and_van_Es)/21%3A_Analyzing_Your_Soil_and_Crop/21.17%3A_Chapter_Appendix-_The_Basic_Cation_Saturation_Ratio_System" target="_blank" rel="noopener">Magdoff &amp; van Es — ข้อโต้แย้งเรื่องอัตราส่วน Ca:Mg:K “อุดมคติ” จึงใช้อัตราส่วนเป็นสัญญาณเตือนเท่านั้น ไม่ใช่เป้าหมายตายตัว</a></li>
+          <li><a href="https://sjst.psu.ac.th/index.php/article/321/PaperPDF/download" target="_blank" rel="noopener">ห้องปฏิบัติการดินไทยมักใช้ Bray II (P) และ NH₄OAc (K) — ควรกรอกค่าตามวิธีเดียวกัน</a></li>
+        </ul>
+        <div class="small muted">หมายเหตุ: ค่า N ทั้งหมดที่ประมาณจาก OM × 0.58 ÷ C:N เป็นหน่วย % (ไม่ใช่ mg/kg)</div></details>`;
+    }
+
+    function summaryText() {
+      const { r, soil, trees, diameter, ranked } = last, p = ranked.find((x) => x.id === state.selected);
+      const lines = [`สรุปผลคำนวณปุ๋ยน้ำทุเรียน + วิเคราะห์ดิน (${new Date().toLocaleString("th-TH")})`, `ทรงพุ่ม ${fmt(diameter, 1)} ม. · ${fmt(trees)} ต้น · ${r.rate.label}`,
+        `สัดส่วนตามระยะ N:P:K = ${r.rate.N}:${r.rate.P}:${r.rate.K} · ปรับตามดิน N×${soil.factors.N} P×${soil.factors.P} K×${soil.factors.K}`];
+      if (r.isStop) lines.push("ระงับการจ่ายปุ๋ย: " + r.stopReasons.join(", "));
+      else lines.push(`ปุ๋ยน้ำต่อต้น ${fmtVolume(r.fertPerTreeMl)} · ทั้งแปลง ${fmtVolume(r.fertTotalMl)}`, `น้ำต่อต้น ${fmt(r.waterPerTreeL, 0)} ลิตร`, `สูตรปุ๋ย: ${p.name} (${p.n}-${p.p}-${p.k})`);
+      if (soil.has) {
+        lines.push("— ผลวิเคราะห์ดิน —");
+        soil.items.forEach((i) => { lines.push(`${i.def.name}: ${fmt(i.value, i.def.dec)} ${i.def.unit} (${i.label})`); i.actions.filter((a) => a.k !== "chk").forEach((a) => lines.push(`   • ${ACT_LABEL[a.k]}: ${a.text}`)); });
+        soil.ratios.forEach((x) => lines.push(`${x.name}: ${x.value} — ${x.note}`));
+      }
+      return lines.join("\n");
+    }
+
+    // ======== เหตุการณ์ ========
+    const DEMO = { sPH: 4.8, sEC: 0.6, sOM: 1.2, sCN: 12, sP: 78, sK: 45, sCa: 420, sMg: 40, sZn: 0.6, sB: 0.2, sCEC: 7 };
+    function bind() {
+      document.addEventListener("click", (e) => {
+        const t = e.target.closest("button"); if (!t) return;
+        if (t.dataset.stage) { state.stage = t.dataset.stage; syncForm(); update(); }
+        else if (t.dataset.weather) { state.weather = t.dataset.weather; syncForm(); update(); }
+        else if (t.dataset.crisis) { const c = t.dataset.crisis; state.crisis = state.crisis.includes(c) ? state.crisis.filter((x) => x !== c) : state.crisis.concat(c); syncForm(); update(); }
+        else if (t.dataset.src) { const s = t.dataset.src; state.sources = state.sources.includes(s) ? state.sources.filter((x) => x !== s) : state.sources.concat(s); syncForm(); update(); }
+        else if (t.dataset.tab) { state.tab = t.dataset.tab; syncForm(); }
+        else if (t.dataset.step) {
+          const el = $("#" + t.dataset.step), d = parseFloat(t.dataset.d), min = t.dataset.step === "treeCount" ? 1 : 0.5;
+          el.value = Math.max(min, Math.round(((parseFloat(el.value) || 0) + d) * 10) / 10); update();
+        }
+        else if (t.dataset.pid) { state.selected = t.dataset.pid; renderFert(); }
+        else if (t.id === "moreProd") { state.showAll = !state.showAll; renderFert(); }
+        else if (t.id === "addProd") openAdd();
+        else if (t.id === "copyBtn") { const s = summaryText(); (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(() => toast("คัดลอกแล้ว"), () => toast("คัดลอกไม่สำเร็จ")); }
+        else if (t.id === "printBtn") window.print();
+        else if (t.id === "resetBtn") resetAll();
+        else if (t.id === "demoSoil") { Object.entries(DEMO).forEach(([id, v]) => ($("#" + id).value = v)); $("#sN").value = ""; update(); state.tab = "soil"; syncForm(); }
+        else if (t.id === "clearSoil") { ["sPH", "sEC", "sOM", "sCN", "sN", "sP", "sK", "sCa", "sMg", "sZn", "sB", "sCEC"].forEach((id) => ($("#" + id).value = "")); update(); }
+        else if (t.id === "barBtn") $(".result").scrollIntoView({ behavior: "smooth", block: "start" });
+        else if (t.id === "locBtn") {
+          if (!navigator.geolocation) return toast("อุปกรณ์ไม่รองรับการระบุตำแหน่ง");
+          navigator.geolocation.getCurrentPosition((p) => { $("#lat").value = p.coords.latitude.toFixed(4); $("#lng").value = p.coords.longitude.toFixed(4); loadForecast(); }, () => toast("ระบุตำแหน่งไม่สำเร็จ"));
+        }
+        else if (t.id === "fcBtn") loadForecast();
+        else if (t.id === "resetSettings") { $("#baseWater").value = DEFAULTS.baseWater; $("#irrEff").value = DEFAULTS.irrEff; $("#fForecast").value = DEFAULTS.fForecast; $("#fStation").value = DEFAULTS.fStation; saveSettings(); update(); }
+        else if (t.id === "themeBtn") toggleTheme();
+      });
+      document.addEventListener("input", (e) => {
+        if (e.target.closest(".form")) { if (["baseWater", "irrEff", "fForecast", "fStation"].includes(e.target.id)) saveSettings(); update(); }
+      });
+      document.addEventListener("change", (e) => { if (e.target.id === "treeCondition" || e.target.id === "soilStillWet") update(); });
+    }
+
+    function openAdd() {
+      const slot = $("#addSlot");
+      slot.innerHTML = `<div class="addform"><input type="text" id="apName" maxlength="40" placeholder="ชื่อสูตรปุ๋ย เช่น ปุ๋ยน้ำ 20-20-20">
+        <input type="number" id="apN" min="0" max="100" step="0.1" placeholder="N"><input type="number" id="apP" min="0" max="100" step="0.1" placeholder="P"><input type="number" id="apK" min="0" max="100" step="0.1" placeholder="K">
+        <button type="button" class="btn sm" id="apSave" style="grid-column:1/-1">บันทึกสูตร</button></div>`;
+      $("#apSave").addEventListener("click", () => {
+        const name = $("#apName").value.trim(), n = val("apN"), p = val("apP"), k = val("apK");
+        if (!name || [n, p, k].some((v) => v == null || v < 0) || n + p + k <= 0) return toast("กรอกชื่อและค่า N-P-K ให้ครบ");
+        const id = "c" + Date.now().toString(36);
+        state.customs.push({ id, name, n, p, k }); store.set("customs", state.customs);
+        state.selected = id; state.showAll = false; update(); toast("เพิ่มสูตรแล้ว");
+      });
+      $("#apName").focus();
+    }
+
+    function resetAll() {
+      $("#canopyDiameter").value = 8; $("#treeCount").value = 10; $("#treeCondition").value = "สมบูรณ์"; $("#soilStillWet").checked = false;
+      ["stTemp", "stRh", "stSoil", "sPH", "sEC", "sOM", "sCN", "sN", "sP", "sK", "sCa", "sMg", "sZn", "sB", "sCEC"].forEach((id) => ($("#" + id).value = ""));
+      Object.assign(state, { stage: "สร้างชุดใบ", weather: "ปกติ", crisis: [], sources: [], selected: null, showAll: false, tab: "fert" });
+      syncForm(); update(); window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    function saveSettings() { store.set("settings", { baseWater: $("#baseWater").value, irrEff: $("#irrEff").value, fForecast: $("#fForecast").value, fStation: $("#fStation").value }); }
+    const isDark = () => document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+    function toggleTheme() { const d = isDark(); document.documentElement.dataset.theme = d ? "light" : "dark"; store.set("theme", d ? "light" : "dark"); themeLabel(); }
+    function themeLabel() { $("#themeBtn").textContent = isDark() ? "โหมดสว่าง" : "โหมดมืด"; }
+
+    // ======== เริ่มต้น ========
+    const th = store.get("theme", null) || (function () { try { return localStorage.getItem("cal1_theme") ? JSON.parse(localStorage.getItem("cal1_theme")) : null; } catch (e) { return null; } })();
+    if (th) document.documentElement.dataset.theme = th;
+    const s = Object.assign({}, DEFAULTS, store.get("settings", {}));
+    $("#baseWater").value = s.baseWater; $("#irrEff").value = s.irrEff; $("#fForecast").value = s.fForecast; $("#fStation").value = s.fStation;
+    const loc = store.get("loc", null); if (loc) { $("#lat").value = loc.lat; $("#lng").value = loc.lng; }
+    buildOptions(); syncForm(); bind(); themeLabel(); update();
+  })();
+  </script>
+</body>
+
+</html>

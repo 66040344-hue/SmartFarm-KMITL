@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b7a75">
+  <title>เมนูโปรแกรมคำนวณ · ปุ๋ยน้ำทุเรียน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #eef3f5; --card: #ffffff; --ink: #0b1a21; --muted: #587079; --line: #d6e1e6; --brand: #0b7a75; --brand-dark: #075652; --brand-soft: #dcf2ef; --on-brand: #fff; --blue: #0a6fb0; --blue-soft: #e1f3fd; --shadow: 0 1px 2px rgba(11,26,33,.06), 0 8px 24px rgba(11,26,33,.06); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #050c11; --card: #0b1820; --ink: #e6f1f4; --muted: #8aa3ad; --line: #1d3340; --brand: #4fe3d3; --brand-dark: #8ff0e4; --brand-soft: #0f2d33; --on-brand: #04201d; --blue: #8fd8ff; --blue-soft: #0e2a3a; --shadow: none; } }
+    :root[data-theme="dark"] { --bg: #050c11; --card: #0b1820; --ink: #e6f1f4; --muted: #8aa3ad; --line: #1d3340; --brand: #4fe3d3; --brand-dark: #8ff0e4; --brand-soft: #0f2d33; --on-brand: #04201d; --blue: #8fd8ff; --blue-soft: #0e2a3a; --shadow: none; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font: 400 16px/1.5 "Chakra Petch", system-ui, sans-serif; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 40px 16px 32px; }
+    h1 { font-size: 1.6rem; margin: 0 0 4px; line-height: 1.25; } .sub { color: var(--muted); margin: 0 0 28px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; } @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+    a.tile { display: flex; flex-direction: column; gap: 10px; padding: 22px; background: var(--card); border: 1.5px solid var(--line); border-radius: 18px; text-decoration: none; color: inherit; box-shadow: var(--shadow); transition: transform .15s, border-color .15s; }
+    a.tile:hover, a.tile:focus-visible { transform: translateY(-3px); border-color: var(--brand); outline: none; }
+    .tag { align-self: flex-start; font-size: .78rem; font-weight: 700; background: var(--brand-soft); color: var(--brand-dark); border-radius: 999px; padding: 2px 12px; }
+    .tile h2 { margin: 0; font-size: 1.2rem; } .tile p { margin: 0; color: var(--muted); font-size: .93rem; }
+    .tile ul { margin: 4px 0 0; padding-left: 18px; font-size: .88rem; } .tile li + li { margin-top: 2px; }
+    .go { margin-top: auto; padding-top: 10px; font-weight: 600; color: var(--brand); }
+    .foot { margin-top: 28px; display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: .85rem; }
+    button { min-height: 38px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--line); background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <h1>โปรแกรมคำนวณปุ๋ยน้ำทุเรียน</h1>
+    <p class="sub">เลือกโปรแกรมตามข้อมูลที่คุณมี</p>
+    <div class="grid">
+      <a class="tile" href="Cal1.html">
+        <span class="tag">Cal1</span>
+        <h2>คำนวณอย่างรวดเร็ว</h2>
+        <p>ไม่ต้องมีผลวิเคราะห์ดิน กรอกทรงพุ่ม จำนวนต้น ระยะพืช และสภาพอากาศ ได้ปริมาณปุ๋ยน้ำและสูตรที่แนะนำทันที</p>
+        <ul><li>ผลคำนวณอัปเดตทันที</li><li>ปรับน้ำตามพยากรณ์อากาศ/ค่าวัดในสวน</li><li>เหมาะกับการใช้งานประจำวัน</li></ul>
+        <span class="go">เปิด Cal1 →</span>
+      </a>
+      <a class="tile" href="CalSoon.html">
+        <span class="tag">Cal2</span>
+        <h2>คำนวณ + วิเคราะห์ดินเชิงลึก</h2>
+        <p>เพิ่มผลวิเคราะห์ดิน (pH, EC, OM, N, P, K, Ca, Mg, Zn, B, CEC) บอกว่าธาตุไหนขาด/เกิน และควรเพิ่มหรือลดอะไร เท่าไร</p>
+        <ul><li>แผนแก้ไขตามลำดับความสำคัญ พร้อมปริมาณโดยประมาณ</li><li>ตรวจสมดุล Ca:Mg, K:Mg, CEC</li><li>ปรับ N-P-K ของปุ๋ยน้ำตามผลดิน</li></ul>
+        <span class="go">เปิด Cal2 →</span>
+      </a>
+    </div>
+    <div class="foot"><span>ข้อมูลเกณฑ์เป็นแนวทางเบื้องต้น ควรยืนยันกับผลวิเคราะห์ใบและเจ้าหน้าที่เกษตร</span><button id="themeBtn" type="button">โหมดมืด</button></div>
+  </main>
+  <script>
+    (function () {
+      var root = document.documentElement, btn = document.getElementById("themeBtn");
+      try { var t = JSON.parse(localStorage.getItem("cal1_theme")); if (t) root.dataset.theme = t; } catch (e) { /* ไม่มีค่าที่เก็บไว้ */ }
+      function dark() { return root.dataset.theme === "dark" || (!root.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches); }
+      function label() { btn.textContent = dark() ? "โหมดสว่าง" : "โหมดมืด"; }
+      btn.addEventListener("click", function () { var d = dark(); root.dataset.theme = d ? "light" : "dark"; try { localStorage.setItem("cal1_theme", JSON.stringify(root.dataset.theme)); localStorage.setItem("cal2_theme", JSON.stringify(root.dataset.theme)); } catch (e) { /* เก็บค่าไม่ได้ก็ใช้งานต่อได้ */ } label(); });
+      label();
+    })();
+  </script>
+</body>
+
+</html>
