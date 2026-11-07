@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#16202e">
+    <title>Popular Vote | โหวตหัวข้อสัมมนา</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #16202e;
+            --ink-soft: #4a5568;
+            --paper: #fbf8f1;
+            --desk: #e9e3d6;
+            --line: #d8d0bf;
+            --stamp: #c2410c;
+            --ok: #166534;
+            --red: #b91c1c;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { margin: 0; }
+        body {
+            font-family: 'IBM Plex Sans Thai', system-ui, sans-serif;
+            color: var(--ink); background: var(--desk); line-height: 1.6;
+            background-image: radial-gradient(rgba(22,32,46,.05) 1px, transparent 1px);
+            background-size: 18px 18px;
+            min-height: 100vh; padding: 1.5rem 1rem 3rem;
+        }
+        .hidden { display: none !important; }
+        button { font-family: inherit; cursor: pointer; }
+
+        .sheet { max-width: 640px; margin: 0 auto; }
+        .brand { display: flex; align-items: center; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 1rem; }
+        .brand b { color: var(--stamp); font-weight: 500; }
+
+        .ballot { background: var(--paper); border: 1.5px solid var(--ink); border-radius: 6px; box-shadow: 6px 6px 0 var(--ink); margin-bottom: 1.5rem; position: relative; }
+        .ballot-head { padding: 1.4rem 1.4rem 1.1rem; border-bottom: 2px dashed var(--line); }
+        .ballot h1, .ballot h2 { font-family: 'Noto Serif Thai', serif; margin: 0; line-height: 1.3; }
+        .ballot h1 { font-size: 1.65rem; }
+        .ballot h2 { font-size: 1.35rem; }
+        .sub { color: var(--ink-soft); font-size: .92rem; margin: .35rem 0 0; }
+        .ballot-body { padding: 1.2rem 1.4rem 1.4rem; }
+
+        .btn { border: 1.5px solid var(--ink); border-radius: 4px; padding: .85rem 1.2rem; font-size: 1rem; font-weight: 600; min-height: 50px; transition: transform .1s, box-shadow .1s; }
+        .btn-solid { background: var(--ink); color: var(--paper); width: 100%; box-shadow: 3px 3px 0 var(--stamp); }
+        .btn-solid:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--stamp); }
+        .btn-solid:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--stamp); }
+        .btn-solid:disabled { background: #cfc8b8; border-color: #cfc8b8; color: #8b8573; box-shadow: none; cursor: not-allowed; }
+        .btn-line { background: transparent; color: var(--ink); }
+        .btn-line:hover { background: var(--desk); }
+        .btn-google { width: 100%; background: #fff; display: flex; gap: .7rem; justify-content: center; align-items: center; box-shadow: 3px 3px 0 var(--ink); }
+        .btn-google:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+        .btn-google svg { width: 20px; height: 20px; }
+        .err { color: var(--red); font-size: .9rem; margin-top: .9rem; padding: .6rem .8rem; border-left: 3px solid var(--red); background: #fef2f2; }
+
+        .who { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .7rem 1.4rem; border-bottom: 1px solid var(--line); font-family: 'JetBrains Mono', monospace; font-size: .76rem; color: var(--ink-soft); }
+        .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .who button { background: none; border: 0; color: var(--stamp); font-size: .78rem; font-family: inherit; text-decoration: underline; flex: none; }
+
+        /* topics */
+        .prompt { font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; color: var(--ink-soft); margin: 0 0 .4rem; }
+        .topic { display: grid; grid-template-columns: 2.4rem 1fr 1.6rem; gap: .6rem; align-items: center; padding: .95rem .8rem; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; position: relative; }
+        .topic:hover { background: #f3eee2; }
+        .topic input { position: absolute; opacity: 0; pointer-events: none; }
+        .topic .no { font-family: 'JetBrains Mono', monospace; font-size: .85rem; color: var(--ink-soft); }
+        .topic .txt { font-weight: 500; }
+        .topic .box { width: 1.5rem; height: 1.5rem; border: 1.5px solid var(--ink); border-radius: 3px; display: grid; place-items: center; background: #fff; }
+        .topic .box svg { width: 1rem; height: 1rem; stroke: var(--paper); stroke-width: 3; fill: none; opacity: 0; transform: scale(.4) rotate(-12deg); transition: .18s cubic-bezier(.3,1.6,.5,1); }
+        .topic.selected { background: var(--ink); color: var(--paper); }
+        .topic.selected .no { color: #f0a77c; }
+        .topic.selected .box { background: var(--stamp); border-color: var(--stamp); }
+        .topic.selected .box svg { opacity: 1; transform: none; }
+        .topic:focus-within { outline: 2px solid var(--stamp); outline-offset: -2px; }
+        .submit-row { position: sticky; bottom: 0; background: linear-gradient(transparent, var(--paper) 35%); padding-top: 1.4rem; margin-top: .5rem; }
+
+        /* skeleton */
+        .skel { display: grid; grid-template-columns: 2.4rem 1fr 1.6rem; gap: .6rem; align-items: center; padding: 1.1rem .8rem; border-bottom: 1px solid var(--line); }
+        .skel i { display: block; height: 14px; border-radius: 3px; background: linear-gradient(90deg, #e8e1d1 25%, #f4efe3 40%, #e8e1d1 60%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; }
+        .skel i:nth-child(1) { width: 1.4rem; }
+        .skel i:nth-child(3) { width: 1.5rem; height: 1.5rem; }
+        @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+        @media (prefers-reduced-motion: reduce) { .skel i { animation: none; } .btn, .topic .box svg { transition: none; } }
+
+        /* done */
+        .done { text-align: center; padding: .6rem 0 .4rem; }
+        .seal { width: 84px; height: 84px; margin: 0 auto 1rem; border: 3px solid var(--ok); color: var(--ok); border-radius: 50%; display: grid; place-items: center; transform: rotate(-10deg); position: relative; }
+        .seal::after { content: ''; position: absolute; inset: 5px; border: 1.5px dashed var(--ok); border-radius: 50%; }
+        .seal svg { width: 38px; height: 38px; stroke: currentColor; stroke-width: 3; fill: none; }
+        .choice { margin: 1rem 0 1.2rem; padding: 1rem; border: 1.5px dashed var(--ink); border-radius: 4px; font-weight: 600; text-align: left; }
+        .choice small { display: block; font-family: 'JetBrains Mono', monospace; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); font-weight: 500; margin-bottom: .2rem; }
+
+        /* results */
+        .res { margin-top: .9rem; }
+        .res .lbl { display: flex; justify-content: space-between; gap: .8rem; font-size: .92rem; }
+        .res .lbl strong { font-family: 'JetBrains Mono', monospace; }
+        .bar { height: 8px; background: var(--desk); margin-top: 5px; }
+        .bar i { display: block; height: 100%; background: var(--stamp); }
+
+        /* modal */
+        .overlay { position: fixed; inset: 0; background: rgba(22,32,46,.6); display: none; align-items: center; justify-content: center; padding: 1rem; z-index: 50; }
+        .overlay.active { display: flex; }
+        .modal { background: var(--paper); border: 1.5px solid var(--ink); border-radius: 6px; box-shadow: 6px 6px 0 var(--stamp); max-width: 420px; width: 100%; padding: 1.4rem; animation: pop .18s ease-out; }
+        @keyframes pop { from { transform: translateY(8px) scale(.97); opacity: 0; } }
+        .modal h3 { font-family: 'Noto Serif Thai', serif; margin: 0 0 .6rem; font-size: 1.25rem; }
+        .modal .chosen { border-left: 4px solid var(--stamp); background: #fff; padding: .8rem 1rem; font-weight: 600; margin: .6rem 0 .9rem; }
+        .modal .note { font-size: .88rem; color: var(--ink-soft); }
+        .modal .row { display: flex; gap: .6rem; margin-top: 1.1rem; }
+        .modal .row .btn { flex: 1; }
+    </style>
+</head>
+
+<body>
+    <div class="sheet">
+        <div class="brand"><span><b>●</b> Popular Vote</span><span>Smart Farm Seminar</span></div>
+
+        <!-- Login -->
+        <section class="ballot" id="loginCard">
+            <div class="ballot-head">
+                <h1>โหวตหัวข้อสัมมนา<br>ยอดนิยม</h1>
+                <p class="sub">เข้าสู่ระบบด้วยบัญชี Google ของสถาบันเพื่อรับบัตรลงคะแนน</p>
+            </div>
+            <div class="ballot-body">
+                <button class="btn btn-google" id="btnLogin">
+                    <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.3 5.7c4.3-4 6.7-9.8 6.7-17.4z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.3-5.7c-2 1.4-4.9 2.3-8.6 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+                    เข้าสู่ระบบด้วย Google KMITL
+                </button>
+                <div class="err hidden" id="loginErr"></div>
+            </div>
+        </section>
+
+        <!-- Vote -->
+        <section class="ballot hidden" id="voteCard">
+            <div class="who"><span id="userEmail"></span><button id="btnLogout">ออกจากระบบ</button></div>
+            <div class="ballot-head">
+                <h2>เลือกหัวข้อที่คุณชอบที่สุด</h2>
+                <p class="sub">เลือก 1 หัวข้อ แล้วกดยืนยัน</p>
+            </div>
+            <div class="ballot-body">
+                <div id="topicList"></div>
+                <div class="submit-row">
+                    <button class="btn btn-solid" id="btnSubmit" disabled>ยืนยัน</button>
+                </div>
+                <div class="err hidden" id="voteErr"></div>
+            </div>
+        </section>
+
+        <!-- Done -->
+        <section class="ballot hidden" id="doneCard">
+            <div class="ballot-body">
+                <div class="done">
+                    <div class="seal"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                    <h2>บันทึกคะแนนของคุณแล้ว</h2>
+                    <div class="choice"><small>หัวข้อที่คุณเลือก</small><span id="myChoice"></span></div>
+                </div>
+                <button class="btn btn-line" id="btnLogout2" style="width:100%">ออกจากระบบ</button>
+            </div>
+        </section>
+
+        <!-- Results (super admin only) -->
+        <section class="ballot hidden" id="resultCard">
+            <div class="ballot-head">
+                <h2>ผลโหวต</h2>
+                <p class="sub" id="resTotal"></p>
+            </div>
+            <div class="ballot-body" id="resList"></div>
+        </section>
+    </div>
+
+    <!-- Confirm popup -->
+    <div class="overlay" id="confirmModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+            <h3 id="cfTitle">ยืนยันการโหวต?</h3>
+            <div class="note">คุณเลือกหัวข้อ</div>
+            <div class="chosen" id="confirmTopic"></div>
+            <div class="note">เมื่อยืนยันแล้วจะ <strong>แก้ไขหรือโหวตใหม่ไม่ได้</strong></div>
+            <div class="row">
+                <button class="btn btn-line" id="btnCancel">ยกเลิก</button>
+                <button class="btn btn-solid" id="btnConfirm">ยืนยันโหวต</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from './seminar-firebase-config.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // ต้องตรงกับ firestore.rules (collection votes)
+        const SUPER_ADMINS = ['66040344@kmitl.ac.th'];
+
+        // รหัสนักศึกษาที่ไม่ร่วมสัมมนาแล้ว → ไม่นำหัวข้อมาให้โหวต (65040425 = หัวข้อมะเขือยาว)
+        const EXCLUDED_IDS = ['65040425'];
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const $ = id => document.getElementById(id);
+
+        let topics = [];       // [{id, topic}]
+        let selected = null;
+        let busy = false;
+
+        const show = (id, on) => $(id).classList.toggle('hidden', !on);
+        const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const isKmitl = u => u && u.emailVerified && /^[^@]+@kmitl\.ac\.th$/i.test(u.email || '');
+        const isStudentId = email => /^\d{8}@kmitl\.ac\.th$/i.test(email);
+
+        $('btnLogin').onclick = () => {
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({ hd: 'kmitl.ac.th', prompt: 'select_account' });
+            signInWithPopup(auth, provider).catch(e => {
+                if (e.code !== 'auth/popup-closed-by-user') showLoginErr('เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่');
+            });
+        };
+        $('btnLogout').onclick = $('btnLogout2').onclick = () => signOut(auth);
+
+        function showLoginErr(m) { $('loginErr').textContent = m; show('loginErr', true); }
+
+        onAuthStateChanged(auth, async user => {
+            show('loginCard', !user); show('voteCard', false); show('doneCard', false); show('resultCard', false);
+            if (!user) return;
+            if (!isKmitl(user)) {
+                await signOut(auth);
+                showLoginErr('กรุณาใช้บัญชี Google @kmitl.ac.th เท่านั้น');
+                return;
+            }
+            show('loginErr', false);
+            const email = user.email.toLowerCase();
+            $('userEmail').textContent = email;
+            // skeleton ระหว่างโหลดหัวข้อ
+            $('topicList').innerHTML = Array.from({ length: 5 }, (_, i) =>
+                `<div class="skel"><i></i><i style="width:${i % 2 ? 60 : 85}%"></i><i></i></div>`).join('');
+            $('btnSubmit').disabled = true;
+            show('loginCard', false); show('voteCard', true);
+            try {
+                // อาจารย์/บุคลากร (ไม่ใช่เลข 8 หลัก) เข้าได้ทุกคน; นักศึกษาต้องมีรหัสในระบบ
+                const sid = email.split('@')[0];
+                const inSystem = !isStudentId(email) || (await getDoc(doc(db, 'students', sid))).exists();
+                if (!inSystem && !SUPER_ADMINS.includes(email)) {
+                    await signOut(auth);
+                    showLoginErr('ไม่พบรหัสนักศึกษาของคุณในระบบ');
+                    return;
+                }
+                const mine = await getDoc(doc(db, 'votes', email));
+                await loadTopics();
+                if (mine.exists()) showDone(mine.data().topicId);
+                else if (!inSystem) { show('loginCard', false); show('voteCard', false); }
+                else { renderTopics(); show('loginCard', false); show('voteCard', true); }
+                if (SUPER_ADMINS.includes(email)) loadResults();
+            } catch (e) {
+                console.error(e);
+                show('voteCard', false);
+                show('loginCard', true);
+                showLoginErr('โหลดข้อมูลไม่สำเร็จ: ' + (e.code || e.message));
+            }
+        });
+
+        async function loadTopics() {
+            const snap = await getDocs(collection(db, 'students'));
+            topics = [];
+            snap.forEach(d => {
+                if (EXCLUDED_IDS.includes(d.id)) return;
+                const t = (d.data().topic || '').trim();
+                if (t) topics.push({ id: d.id, topic: t });
+            });
+            // สุ่มลำดับ (Fisher-Yates) ลด bias จากตำแหน่ง
+            for (let i = topics.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [topics[i], topics[j]] = [topics[j], topics[i]];
+            }
+        }
+
+        const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+        function renderTopics() {
+            selected = null; $('btnSubmit').disabled = true;
+            if (!topics.length) { $('topicList').innerHTML = '<p class="sub">ยังไม่มีหัวข้อในระบบ</p>'; return; }
+            $('topicList').innerHTML = '<p class="prompt">รายการหัวข้อ</p>' + topics.map((t, i) =>
+                `<label class="topic" data-id="${esc(t.id)}"><input type="radio" name="topic" value="${esc(t.id)}"><span class="no">${String(i + 1).padStart(2, '0')}</span><span class="txt">${esc(t.topic)}</span><span class="box">${CHECK}</span></label>`
+            ).join('');
+            $('topicList').querySelectorAll('input').forEach(r => r.onchange = () => {
+                selected = r.value;
+                $('topicList').querySelectorAll('.topic').forEach(l => l.classList.toggle('selected', l.dataset.id === selected));
+                $('btnSubmit').disabled = false;
+            });
+        }
+
+        const topicName = id => (topics.find(t => t.id === id) || {}).topic || '(หัวข้อที่ถูกลบออกจากระบบ)';
+
+        $('btnSubmit').onclick = () => {
+            if (!selected) return;
+            $('confirmTopic').textContent = topicName(selected);
+            $('confirmModal').classList.add('active');
+        };
+        $('btnCancel').onclick = () => $('confirmModal').classList.remove('active');
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') $('confirmModal').classList.remove('active'); });
+
+        $('btnConfirm').onclick = async () => {
+            if (busy || !selected) return;
+            const user = auth.currentUser;
+            if (!isKmitl(user)) return;
+            busy = true; $('btnConfirm').disabled = true;
+            try {
+                // กฎ Firestore อนุญาตเฉพาะ create (ห้ามแก้/ลบ) จึงโหวตซ้ำไม่ได้
+                await setDoc(doc(db, 'votes', user.email.toLowerCase()), {
+                    email: user.email.toLowerCase(), topicId: selected, votedAt: serverTimestamp()
+                });
+                $('confirmModal').classList.remove('active');
+                showDone(selected);
+                if (SUPER_ADMINS.includes(user.email.toLowerCase())) loadResults();
+            } catch (e) {
+                console.error(e);
+                $('confirmModal').classList.remove('active');
+                $('voteErr').textContent = e.code === 'permission-denied'
+                    ? 'ไม่สามารถโหวตได้ (คุณอาจโหวตไปแล้ว หรือไม่มีสิทธิ์)' : 'เกิดข้อผิดพลาด: ' + (e.code || e.message);
+                show('voteErr', true);
+            } finally { busy = false; $('btnConfirm').disabled = false; }
+        };
+
+        function showDone(topicId) {
+            $('myChoice').textContent = topicName(topicId);
+            show('voteCard', false); show('doneCard', true);
+        }
+
+        async function loadResults() {
+            try {
+                const snap = await getDocs(collection(db, 'votes'));
+                const count = {}; let total = 0;
+                snap.forEach(d => { const id = d.data().topicId; count[id] = (count[id] || 0) + 1; total++; });
+                const rows = Object.entries(count).sort((a, b) => b[1] - a[1]);
+                const max = rows.length ? rows[0][1] : 1;
+                $('resTotal').textContent = `ผู้โหวตทั้งหมด ${total} คน • เห็นเฉพาะผู้ดูแล`;
+                $('resList').innerHTML = rows.map(([id, n]) =>
+                    `<div class="res"><div class="lbl"><span>${esc(topicName(id))}</span><strong>${n}</strong></div><div class="bar"><i style="width:${n / max * 100}%"></i></div></div>`
+                ).join('') || '<p class="sub">ยังไม่มีผู้โหวต</p>';
+                show('resultCard', true);
+            } catch (e) { console.warn('results unavailable', e); }
+        }
+    </script>
+</body>
+
+</html>

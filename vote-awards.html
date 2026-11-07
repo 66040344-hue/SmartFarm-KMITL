@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#16202e">
+    <title>ประกาศรางวัล Popular Vote</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #16202e; --ink-soft: #4a5568; --paper: #fbf8f1; --desk: #e9e3d6;
+            --line: #d8d0bf; --stamp: #c2410c; --gold: #d4a017; --red: #b91c1c;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { margin: 0; }
+        body {
+            font-family: 'IBM Plex Sans Thai', system-ui, sans-serif; color: var(--ink); line-height: 1.6;
+            background: var(--desk); background-image: radial-gradient(rgba(22,32,46,.05) 1px, transparent 1px);
+            background-size: 18px 18px; min-height: 100vh; padding: 1.5rem 1rem 3rem;
+        }
+        .hidden { display: none !important; }
+        button { font-family: inherit; cursor: pointer; }
+        .sheet { max-width: 720px; margin: 0 auto; }
+        .brand { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 1rem; }
+        .brand b { color: var(--stamp); font-weight: 500; }
+        .brand button { background: none; border: 0; color: var(--stamp); text-decoration: underline; font: inherit; }
+
+        .ballot { background: var(--paper); border: 1.5px solid var(--ink); border-radius: 6px; box-shadow: 6px 6px 0 var(--ink); margin-bottom: 1.5rem; }
+        .ballot-head { padding: 1.4rem 1.4rem 1.1rem; border-bottom: 2px dashed var(--line); }
+        .ballot-body { padding: 1.4rem; }
+        h1, h2, h3 { font-family: 'Noto Serif Thai', serif; margin: 0; line-height: 1.3; }
+        h1 { font-size: 1.65rem; } h2 { font-size: 1.35rem; }
+        .sub { color: var(--ink-soft); font-size: .92rem; margin: .35rem 0 0; }
+
+        .btn { border: 1.5px solid var(--ink); border-radius: 4px; padding: .85rem 1.2rem; font-size: 1rem; font-weight: 600; min-height: 50px; transition: transform .1s, box-shadow .1s; }
+        .btn-solid { background: var(--ink); color: var(--paper); box-shadow: 3px 3px 0 var(--stamp); }
+        .btn-solid:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--stamp); }
+        .btn-solid:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--stamp); }
+        .btn-solid:disabled { background: #cfc8b8; border-color: #cfc8b8; color: #8b8573; box-shadow: none; cursor: not-allowed; }
+        .btn-line { background: transparent; color: var(--ink); }
+        .btn-google { width: 100%; background: #fff; display: flex; gap: .7rem; justify-content: center; align-items: center; box-shadow: 3px 3px 0 var(--ink); }
+        .btn-google svg { width: 20px; height: 20px; }
+        .err { color: var(--red); font-size: .9rem; margin-top: .9rem; padding: .6rem .8rem; border-left: 3px solid var(--red); background: #fef2f2; }
+
+        /* stage: 1st place */
+        .stage { text-align: center; padding: 2rem 1rem 1.6rem; }
+        .trophy { font-size: 3rem; line-height: 1; }
+        .kicker { font-family: 'JetBrains Mono', monospace; font-size: .75rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); margin: .6rem 0; }
+        .count { font-family: 'JetBrains Mono', monospace; font-size: 6rem; line-height: 1; color: var(--stamp); margin: 1rem 0; }
+        .reel { min-height: 5.5rem; display: grid; place-items: center; margin: 1rem 0; padding: 1rem; border: 1.5px dashed var(--ink); border-radius: 4px; font-family: 'Noto Serif Thai', serif; font-size: 1.25rem; font-weight: 600; color: var(--ink-soft); filter: blur(1.5px); }
+        .winner { animation: rise .7s cubic-bezier(.2,1.3,.4,1); }
+        @keyframes rise { from { transform: scale(.7) translateY(20px); opacity: 0; } }
+        .winner .rank { display: inline-block; background: var(--gold); color: var(--ink); font-family: 'JetBrains Mono', monospace; padding: .2rem .9rem; border-radius: 99px; font-size: .8rem; letter-spacing: .12em; }
+        .winner h2 { font-size: 1.8rem; margin: 1rem 0 .6rem; }
+        .winner .who { font-weight: 600; font-size: 1.1rem; }
+        .winner .meta { color: var(--ink-soft); font-size: .95rem; }
+        .winner .votes { margin-top: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: var(--stamp); }
+        .tie { margin-top: 1.2rem; padding-top: 1.2rem; border-top: 1px dashed var(--line); }
+
+        /* ranks 2-5 */
+        .rank-card { border-bottom: 1px solid var(--line); padding: 1rem 0; display: grid; grid-template-columns: 3rem 1fr auto; gap: .8rem; align-items: center; }
+        .rank-card:last-child { border-bottom: 0; }
+        .rank-no { font-family: 'JetBrains Mono', monospace; font-size: 1.6rem; color: var(--ink-soft); }
+        .rank-card .locked { color: var(--ink-soft); letter-spacing: .3em; }
+        .rank-card .t { font-weight: 600; }
+        .rank-card .m { font-size: .88rem; color: var(--ink-soft); }
+        .rank-card .v { font-family: 'JetBrains Mono', monospace; color: var(--stamp); }
+        .rank-card .reveal-in { animation: rise .4s ease-out; }
+        .btn-sm { min-height: 40px; padding: .4rem .9rem; font-size: .88rem; }
+
+        /* full-screen suspense */
+        .suspense { position: fixed; inset: 0; z-index: 40; background: #0a1019; color: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem; overflow: hidden; animation: fadein .5s ease-out; }
+        @keyframes fadein { from { opacity: 0; } }
+        .suspense::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(194,65,12,.45), transparent 60%); animation: heart var(--beat, 1.2s) ease-in-out infinite; }
+        @keyframes heart { 0%, 100% { opacity: .25; transform: scale(.9); } 12% { opacity: 1; transform: scale(1.12); } 24% { opacity: .35; transform: scale(.95); } 36% { opacity: .85; transform: scale(1.06); } }
+        .suspense > * { position: relative; }
+        .s-kick { font-family: 'JetBrains Mono', monospace; letter-spacing: .25em; text-transform: uppercase; font-size: .85rem; color: #f0a77c; }
+        .s-cd { font-family: 'JetBrains Mono', monospace; font-size: clamp(7rem, 30vw, 14rem); line-height: 1; margin: .5rem 0; color: #fff; text-shadow: 0 0 40px rgba(194,65,12,.9); }
+        .s-cd.tick { animation: tick .9s ease-out; }
+        @keyframes tick { 0% { transform: scale(2.2); opacity: 0; } 25% { transform: scale(1); opacity: 1; } 100% { transform: scale(.88); opacity: .8; } }
+        .s-reel { width: min(100%, 640px); min-height: 6.5rem; display: grid; place-items: center; padding: 1.1rem; border: 2px solid rgba(251,248,241,.35); border-radius: 6px; font-family: 'Noto Serif Thai', serif; font-size: clamp(1.05rem, 3.4vw, 1.5rem); font-weight: 600; transition: filter .3s, border-color .3s, color .3s; }
+        .s-reel.locked { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 40px rgba(212,160,23,.5); }
+        .s-msg { margin-top: 1.4rem; min-height: 1.6rem; color: rgba(251,248,241,.75); font-size: 1.05rem; }
+        .s-bar { width: min(100%, 640px); height: 4px; background: rgba(251,248,241,.15); margin-top: 1.5rem; }
+        .s-bar i { display: block; height: 100%; width: 0; background: var(--stamp); }
+        .shake { animation: shake .12s linear infinite; }
+        @keyframes shake { 0% { transform: translate(2px, 1px); } 25% { transform: translate(-2px, -1px); } 50% { transform: translate(1px, -2px); } 75% { transform: translate(-1px, 2px); } 100% { transform: translate(2px, 1px); } }
+        .flash { position: fixed; inset: 0; background: #fff; z-index: 70; pointer-events: none; opacity: 0; }
+        .flash.go { animation: flash 1s ease-out; }
+        @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+        @media (prefers-reduced-motion: reduce) { .suspense::before, .s-cd.tick, .shake, .flash.go { animation: none; } }
+        canvas#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
+        @media (prefers-reduced-motion: reduce) { .winner, .rank-card .reveal-in { animation: none; } .btn { transition: none; } }
+    </style>
+</head>
+
+<body>
+    <canvas id="fx"></canvas>
+    <div class="flash" id="flash"></div>
+    <div class="suspense hidden" id="suspense">
+        <div class="s-kick" id="sKick">อันดับ 1 คือ...</div>
+        <div class="s-cd" id="sCd"></div>
+        <div class="s-reel" id="sReel">?</div>
+        <div class="s-msg" id="sMsg"></div>
+        <div class="s-bar"><i id="sBar"></i></div>
+    </div>
+    <div class="sheet">
+        <div class="brand">
+            <span><b>●</b> Popular Vote • Awards</span>
+            <button id="btnLogout" class="hidden">ออกจากระบบ</button>
+        </div>
+
+        <!-- Login -->
+        <section class="ballot" id="loginCard">
+            <div class="ballot-head">
+                <h1>ประกาศรางวัล<br>Popular Vote</h1>
+                <p class="sub">สำหรับผู้ดูแลระบบเท่านั้น</p>
+            </div>
+            <div class="ballot-body">
+                <button class="btn btn-google" id="btnLogin">
+                    <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.3 5.7c4.3-4 6.7-9.8 6.7-17.4z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.3-5.7c-2 1.4-4.9 2.3-8.6 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+                    เข้าสู่ระบบด้วย Google KMITL
+                </button>
+                <div class="err hidden" id="loginErr"></div>
+            </div>
+        </section>
+
+        <!-- Loading -->
+        <section class="ballot hidden" id="loadCard"><div class="ballot-body"><p class="sub" style="text-align:center">กำลังโหลดผลโหวต...</p></div></section>
+
+        <!-- Awards -->
+        <div id="awards" class="hidden">
+            <section class="ballot">
+                <div class="stage" id="stage"></div>
+            </section>
+
+            <section class="ballot hidden" id="othersCard">
+                <div class="ballot-head">
+                    <h2>อันดับ 2 – 5</h2>
+                    <p class="sub">กดเปิดดูทีละอันดับ</p>
+                </div>
+                <div class="ballot-body" id="others"></div>
+            </section>
+        </div>
+    </div>
+
+    <script type="module">
+        import { firebaseConfig } from './seminar-firebase-config.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // ต้องตรงกับ firestore.rules (votes อ่านได้เฉพาะบัญชีนี้)
+        const ADMIN = '66040344@kmitl.ac.th';
+        const EXCLUDED_IDS = ['65040425'];
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const $ = id => document.getElementById(id);
+        const show = (id, on) => $(id).classList.toggle('hidden', !on);
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        let ranks = [];   // [{ rank, votes, items:[{id, topic, name, advisor}] }]
+
+        $('btnLogin').onclick = () => {
+            const p = new GoogleAuthProvider();
+            p.setCustomParameters({ hd: 'kmitl.ac.th', prompt: 'select_account' });
+            signInWithPopup(auth, p).catch(e => {
+                if (e.code !== 'auth/popup-closed-by-user') showErr('เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่');
+            });
+        };
+        $('btnLogout').onclick = () => signOut(auth);
+        function showErr(m) { $('loginErr').textContent = m; show('loginErr', true); }
+
+        onAuthStateChanged(auth, async user => {
+            show('loginCard', !user); show('loadCard', false); show('awards', false);
+            show('btnLogout', !!user);
+            if (!user) return;
+            const email = (user.email || '').toLowerCase();
+            if (!user.emailVerified || email !== ADMIN) {
+                await signOut(auth);
+                showErr('หน้านี้สำหรับผู้ดูแลระบบเท่านั้น');
+                return;
+            }
+            show('loginErr', false); show('loginCard', false); show('loadCard', true);
+            try {
+                await loadRanks();
+                show('loadCard', false); show('awards', true);
+                renderIntro();
+            } catch (e) {
+                console.error(e);
+                show('loadCard', false); show('loginCard', true);
+                showErr('โหลดข้อมูลไม่สำเร็จ: ' + (e.code || e.message));
+            }
+        });
+
+        async function loadRanks() {
+            const [vs, ss] = await Promise.all([getDocs(collection(db, 'votes')), getDocs(collection(db, 'students'))]);
+            const info = {};
+            ss.forEach(d => { info[d.id] = d.data(); });
+            const count = {};
+            vs.forEach(d => {
+                const id = d.data().topicId;
+                if (EXCLUDED_IDS.includes(id) || !info[id]) return;
+                count[id] = (count[id] || 0) + 1;
+            });
+            // จัดอันดับแบบ dense: คะแนนเท่ากันได้อันดับเดียวกัน
+            const groups = {};
+            Object.entries(count).forEach(([id, n]) => {
+                (groups[n] ||= []).push({ id, topic: info[id].topic || '', name: info[id].name || '', advisor: info[id].advisor || '' });
+            });
+            ranks = Object.keys(groups).map(Number).sort((a, b) => b - a)
+                .slice(0, 5).map((v, i) => ({ rank: i + 1, votes: v, items: groups[v] }));
+            window._total = vs.size;
+        }
+
+        /* ---------- อันดับ 1 ---------- */
+        function renderIntro() {
+            show('othersCard', false);
+            if (!ranks.length) {
+                $('stage').innerHTML = '<p class="sub">ยังไม่มีผู้โหวต</p>';
+                return;
+            }
+            $('stage').innerHTML = `
+                <div class="trophy">🏆</div>
+                <div class="kicker">ผู้โหวตทั้งหมด ${window._total} คน</div>
+                <h1>ประกาศอันดับ 1</h1>
+                <p class="sub">พร้อมแล้วกดเริ่มประกาศได้เลย</p>
+                <button class="btn btn-solid" id="btnStart" style="margin-top:1.4rem">เริ่มประกาศ</button>`;
+            $('btnStart').onclick = runSuspense;
+        }
+
+        /* ---------- เสียงประกอบ (WebAudio ไม่ต้องใช้ไฟล์) ---------- */
+        let actx = null;
+        function tone(freq, dur = .12, type = 'sine', vol = .18, when = 0) {
+            if (!actx) return;
+            const t = actx.currentTime + when, o = actx.createOscillator(), g = actx.createGain();
+            o.type = type; o.frequency.setValueAtTime(freq, t);
+            g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+            o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur);
+        }
+        const thump = () => { tone(70, .25, 'sine', .5); tone(45, .3, 'sine', .5, .01); };
+        const fanfare = () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, .35, 'triangle', .22, i * .13));
+
+        async function runSuspense() {
+            try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch { actx = null; }
+            const first = ranks[0];
+            const winnerName = first.items.map(i => i.topic).join(' / ');
+            const names = ranks.flatMap(r => r.items.map(i => i.topic)).filter(Boolean);
+            const ov = $('suspense'), cd = $('sCd'), reel = $('sReel'), msg = $('sMsg'), bar = $('sBar');
+            reel.classList.remove('locked'); reel.style.filter = 'blur(6px)'; reel.textContent = '?';
+            cd.textContent = ''; msg.textContent = ''; bar.style.width = '0'; ov.style.setProperty('--beat', '1.2s');
+            ov.classList.remove('hidden', 'shake');
+            ov.requestFullscreen?.().catch(() => { });
+
+            const total = reduceMotion ? 6000 : 12000;     // ความยาวช่วงลุ้นทั้งหมด (ms)
+            const t0 = performance.now();
+            const lines = [
+                [0, 'หัวข้อทั้งหมดกำลังแข่งขันกัน...'],
+                [.30, `ผู้โหวตทั้งหมด ${window._total} คน`],
+                [.55, 'ใกล้เข้ามาแล้ว...'],
+                [.78, 'ใจเย็นๆ นะ...'],
+                [.90, 'และผู้ชนะก็คือ...']
+            ];
+            let li = 0, lastTick = -1, i = 0, nextSpin = 0;
+
+            // วนเปลี่ยนหัวข้อ: เริ่มเร็ว แล้วค่อยๆ ช้าลง (slot machine) + ภาพชัดขึ้นเรื่อยๆ
+            while (true) {
+                const el = performance.now() - t0, p = Math.min(el / total, 1);
+                if (p >= 1) break;
+                bar.style.width = (p * 100) + '%';
+                while (li < lines.length && p >= lines[li][0]) msg.textContent = lines[li++][1];
+
+                // นับถอยหลัง 5..1 ในช่วงท้าย (หลัง 60% ของเวลา)
+                const cdStart = .6, cdN = 5;
+                if (p >= cdStart) {
+                    const n = cdN - Math.floor((p - cdStart) / (1 - cdStart) * cdN);
+                    if (n !== lastTick) {
+                        lastTick = n; cd.textContent = n;
+                        cd.classList.remove('tick'); void cd.offsetWidth; cd.classList.add('tick');
+                        thump();
+                        ov.style.setProperty('--beat', Math.max(.35, .3 + n * .12) + 's');
+                        if (n <= 2) ov.classList.add('shake');
+                    }
+                }
+
+                if (el >= nextSpin) {
+                    reel.textContent = names[i++ % names.length] || '?';
+                    reel.style.filter = `blur(${(6 * (1 - p)).toFixed(1)}px)`;
+                    tone(300 + p * 500, .05, 'square', .06);
+                    nextSpin = el + (reduceMotion ? 700 : 55 + Math.pow(p, 2.2) * 700);
+                }
+                await sleep(16);
+            }
+
+            // ช่วงเงียบก่อนเผย: หัวข้อล็อกที่ผู้ชนะ
+            ov.classList.remove('shake');
+            cd.textContent = '';
+            reel.textContent = winnerName; reel.style.filter = 'none'; reel.classList.add('locked');
+            bar.style.width = '100%'; msg.textContent = '';
+            await sleep(1600);
+
+            // เผย
+            const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+            fanfare();
+            ov.classList.add('hidden');
+            if (document.fullscreenElement) document.exitFullscreen?.().catch(() => { });
+            revealFirst(first);
+        }
+
+        function revealFirst(first) {
+            const tie = first.items.length > 1;
+            $('stage').innerHTML = `<div class="winner">
+                <div class="trophy">🏆</div>
+                <div class="kicker">${tie ? 'ผู้ชนะอันดับ 1 (คะแนนเท่ากัน)' : 'ผู้ชนะอันดับ 1'}</div>
+                ${first.items.map((it, i) => `<div class="${i ? 'tie' : ''}">
+                    <span class="rank">1ST</span>
+                    <h2>${esc(it.topic)}</h2>
+                    <div class="who">${esc(it.name)}</div>
+                    <div class="meta">${esc(it.advisor)}</div></div>`).join('')}
+                <div class="votes">${first.votes} คะแนน</div>
+                ${ranks.length > 1 ? '<button class="btn btn-line" id="btnMore" style="margin-top:1.6rem">ดูอันดับ 2 – 5</button>' : ''}
+            </div>`;
+            confetti();
+            const more = $('btnMore');
+            if (more) more.onclick = () => { renderOthers(); more.remove(); $('othersCard').scrollIntoView({ behavior: 'smooth' }); };
+        }
+
+        /* ---------- อันดับ 2-5 (เปิดดูเมื่อกด) ---------- */
+        function renderOthers() {
+            show('othersCard', true);
+            $('others').innerHTML = ranks.slice(1).map(r => `
+                <div class="rank-card" id="rk${r.rank}">
+                    <div class="rank-no">${r.rank}</div>
+                    <div><div class="locked">••••••••••</div></div>
+                    <button class="btn btn-solid btn-sm" data-rank="${r.rank}">เปิดดู</button>
+                </div>`).join('');
+            $('others').querySelectorAll('button[data-rank]').forEach(b => b.onclick = () => openRank(+b.dataset.rank));
+        }
+
+        function openRank(n) {
+            const r = ranks.find(x => x.rank === n);
+            const el = $('rk' + n);
+            el.innerHTML = `<div class="rank-no">${n}</div>
+                <div class="reveal-in">${r.items.map(it => `<div style="margin-bottom:.5rem"><div class="t">${esc(it.topic)}</div><div class="m">${esc(it.name)}${it.advisor ? ' • ' + esc(it.advisor) : ''}</div></div>`).join('')}</div>
+                <div class="v">${r.votes} คะแนน</div>`;
+        }
+
+        /* ---------- confetti ---------- */
+        function confetti() {
+            if (reduceMotion) return;
+            const c = $('fx'), g = c.getContext('2d');
+            c.width = innerWidth; c.height = innerHeight;
+            const cols = ['#c2410c', '#d4a017', '#16202e', '#166534', '#f0a77c'];
+            const ps = Array.from({ length: 160 }, () => ({
+                x: Math.random() * c.width, y: -20 - Math.random() * c.height * .5,
+                w: 6 + Math.random() * 6, h: 10 + Math.random() * 8, vx: -1.5 + Math.random() * 3,
+                vy: 2 + Math.random() * 4, r: Math.random() * 6, vr: -.2 + Math.random() * .4,
+                c: cols[Math.floor(Math.random() * cols.length)]
+            }));
+            let t = 0;
+            (function frame() {
+                g.clearRect(0, 0, c.width, c.height);
+                ps.forEach(p => {
+                    p.x += p.vx; p.y += p.vy; p.r += p.vr;
+                    g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore();
+                });
+                if (++t < 260) requestAnimationFrame(frame); else g.clearRect(0, 0, c.width, c.height);
+            })();
+        }
+    </script>
+</body>
+
+</html>
