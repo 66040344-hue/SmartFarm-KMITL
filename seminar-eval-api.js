@@ -53,12 +53,12 @@ async function authorize(u) {
     if (!email.endsWith("@" + DOMAIN)) fail(`ต้องใช้บัญชีของสถาบัน (@${DOMAIN}) เท่านั้น — บัญชีที่เลือก: ${email || "-"}`);
     if (SUPER_ADMINS.includes(email))
         return { id: email, email, name: u.displayName || email, role: "both", superAdmin: true };
-    if (STUDENT_RE.test(email)) fail("ระบบนี้สำหรับอาจารย์และผู้ดูแลเท่านั้น บัญชีนักศึกษาเข้าใช้ไม่ได้");
     let snap = null;
     try { snap = await getDoc(doc(db, "evalUsers", email)); }
     catch (e) { if (e.code !== "permission-denied") throw friendly(e); }
-    if (!snap || !snap.exists()) fail(`บัญชี ${email} ยังไม่ได้รับสิทธิ์ใช้งาน กรุณาแจ้งผู้ดูแลระบบ`);
+    if (!snap || !snap.exists()) fail(`บัญชี ${email} ยังไม่ได้รับสิทธิ์ใช้งาน กรุณาแจ้งผู้ดูแลระบบให้เพิ่มรายชื่อก่อน`);
     const d = snap.data();
+    if (STUDENT_RE.test(email) && d.role !== "teacher") fail("บัญชีนักศึกษาใช้สิทธิ์ผู้ประเมินได้เท่านั้น");
     return { id: email, email, name: d.name || u.displayName || email, role: d.role };
 }
 
@@ -248,7 +248,7 @@ export const API = {
             t.name = String(t.name || "").trim();
             if (!t.name) fail("กรุณากรอกชื่อให้ครบ");
             if (!t.email.endsWith("@" + DOMAIN)) fail(`${t.name}: อีเมลต้องลงท้ายด้วย @${DOMAIN}`);
-            if (STUDENT_RE.test(t.email)) fail(`${t.name}: ใช้บัญชีนักศึกษาไม่ได้`);
+            if (STUDENT_RE.test(t.email) && t.role !== "teacher") fail(`${t.name}: บัญชีนักศึกษากำหนดได้เฉพาะสิทธิ์ "อาจารย์ผู้ประเมิน"`);
             if (SUPER_ADMINS.includes(t.email)) fail(`${t.email} เป็นผู้ดูแลถาวรอยู่แล้ว ไม่ต้องเพิ่มในรายการ`);
             if (seen.has(t.email)) fail("อีเมลซ้ำ: " + t.email);
             if (!ROLES.includes(t.role)) fail("สิทธิ์ไม่ถูกต้อง");
