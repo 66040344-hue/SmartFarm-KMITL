@@ -79,7 +79,7 @@ function needAdmin() { if (!isAdmin(needUser())) fail("เฉพาะผู้�
 function toRec(d) {
     const t = d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate() : new Date();
     return { tid: d.email, sid: d.sid, items: d.items || {}, total: d.total, comment: d.comment || "", updatedAt: t.toISOString(),
-        status: d.status || "submitted" };                  // ใบเก่าที่ไม่มี status ถือว่าส่งแล้ว
+        status: d.status || "submitted", proxy: d.proxy === true };                  // ใบเก่าที่ไม่มี status ถือว่าส่งแล้ว
 }
 
 async function readMain() {
@@ -175,6 +175,27 @@ export const API = {
         };
         await setDoc(doc(db, "evalScores", `${sid}__${u.email}`), data);
         return toRec(Object.assign({}, data, { updatedAt: null }));
+    }),
+
+    // ผู้ดูแลกรอกคะแนนรวมแทนกรรมการ (ประเมินแบบกระดาษ) — ไม่ทับใบที่กรรมการส่งในระบบเอง; total = null → ลบคะแนนที่กรอกแทน
+    saveProxyScore: (sid, teacherEmail, total, fullMax) => guard(async () => {
+        const u = needUser(); needAdmin();
+        const st = SEMINAR.students.find(s => s.sid === sid);
+        if (!st) fail("ไม่พบนักศึกษา");
+        const email = String(teacherEmail || "").trim().toLowerCase();
+        const ref = doc(db, "evalScores", `${sid}__${email}`);
+        const old = await getDoc(ref);
+        if (old.exists() && old.data().proxy !== true) fail("กรรมการท่านนี้ประเมินในระบบแล้ว แก้ไขแทนไม่ได้");
+        if (total == null) { if (old.exists()) await deleteDoc(ref); return null; }
+        const v = Number(total);
+        if (!(v >= 0 && v <= fullMax) || v * 2 !== Math.floor(v * 2)) fail(`คะแนนต้องอยู่ระหว่าง 0–${fullMax} (ทศนิยมได้เฉพาะ .5)`);
+        const t = (await getDocs(collection(db, "evalUsers"))).docs.find(d => d.id === email);
+        if (!t) fail("ไม่พบกรรมการท่านนี้ในรายชื่อผู้ใช้งาน");
+        await setDoc(ref, {
+            sid, email, name: t.data().name || email, date: st.date, items: {}, total: v, comment: "",
+            status: "submitted", proxy: true, proxyBy: u.email, updatedAt: serverTimestamp()
+        });
+        return v;
     }),
 
     // ลบได้เฉพาะคะแนนของบัญชีผู้ดูแลถาวร (ใช้ทดลองระบบ) — rules บังคับซ้ำ

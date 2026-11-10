@@ -22,7 +22,8 @@ const home = () => isPreview(S.user) ? "#/preview" : "#/";
 const items = () => S.cfg.criteria.flatMap(s => s.items);
 const fullMax = () => items().reduce((a, it) => a + it.max, 0);
 // รวมคะแนนใหม่ตามเกณฑ์ปัจจุบัน (กรณีผู้ดูแลแก้เกณฑ์หลังมีคะแนนแล้ว ค่า total ที่เก็บไว้อาจล้าสมัย)
-const recTotal = r => items().reduce((a, it) => a + (Number(r.items[it.id]) || 0), 0);
+// ใบที่ผู้ดูแลกรอกแทนกรรมการ (proxy) เก็บเฉพาะคะแนนรวม ไม่มีรายข้อ
+const recTotal = r => r.proxy ? (Number(r.total) || 0) : items().reduce((a, it) => a + (Number(r.items[it.id]) || 0), 0);
 const secSum = (sec, vals) => sec.items.reduce((a, it) => a + (Number(vals[it.id]) || 0), 0);
 const ROLE = { teacher: "อาจารย์ผู้ประเมิน", admin: "ผู้ดูแลระบบ", both: "อาจารย์ + ผู้ดูแล" };
 
@@ -401,7 +402,7 @@ function startWatch() {
             const first = S.all == null;
             S.raw = list; applyLive();
             if (first) { resolve(); if (isLive()) API.purgeStale(S.cfg.liveFrom).catch(() => { }); }
-            else if (location.hash.startsWith("#/admin") && S.atab !== "users" && S.atab !== "criteria") renderAdminBody();
+            else if (location.hash.startsWith("#/admin") && S.atab !== "users" && S.atab !== "criteria" && !(S.atab === "proxy" && S.pxDirty)) renderAdminBody();
         }, err => { if (S.all == null) reject(err); else toast(errMsg(err), true); });
     });
 }
@@ -412,7 +413,7 @@ async function renderAdmin() {
         try { S.cfg = await API.getConfig(); await startWatch(); }
         catch (e) { stopWatch(); shell(`<main class="wrap"><div class="banner err">${esc(errMsg(e))}</div></main>`, "admin"); return; }
     }
-    const tabs = [["overview", "ภาพรวม"], ["results", "ผลคะแนน"], ["podium", "อันดับ"], ["criteria", "เกณฑ์ประเมิน"], ["users", "ผู้ใช้งาน"]];
+    const tabs = [["overview", "ภาพรวม"], ["results", "ผลคะแนน"], ["podium", "อันดับ"], ["proxy", "กรอกแทนกรรมการ"], ["criteria", "เกณฑ์ประเมิน"], ["users", "ผู้ใช้งาน"]];
     shell(`<main class="wrap">
       <div class="atabs">${tabs.map(([k, l]) => `<button data-go="#/admin/${k}" class="${S.atab === k ? "on" : ""}">${l}</button>`).join("")}
         <span style="flex:1"></span>
@@ -426,7 +427,7 @@ async function renderAdmin() {
 function renderAdminBody() {
     const el = document.getElementById("abody");
     if (!el) return;
-    ({ overview: adminOverview, results: adminResults, podium: adminPodium, criteria: adminCriteria, users: adminUsers }[S.atab] || adminOverview)(el);
+    ({ overview: adminOverview, results: adminResults, podium: adminPodium, proxy: adminProxy, criteria: adminCriteria, users: adminUsers }[S.atab] || adminOverview)(el);
 }
 
 // ผู้ดูแลถาวรไม่อยู่ในรายชื่อ evalUsers คะแนนทดลองจึงถูกตัดออกจากสรุป เว้นแต่เปิด "รวมคะแนนทดลอง" ไว้
@@ -439,10 +440,13 @@ function scoreIndex() {
 }
 function summary(st, recs) {
     recs = recs || [];
+    // หารด้วยจำนวนกรรมการที่ให้คะแนนจริงของนักศึกษาคนนั้น (ไม่ใช่จำนวนกรรมการทั้งหมด)
     const n = recs.length, avg = f => n ? recs.reduce((a, r) => a + f(r), 0) / n : null;
+    // คะแนนรายส่วนเฉลี่ยจากใบที่มีรายข้อเท่านั้น (ใบที่กรอกแทนมีแต่คะแนนรวม)
+    const full = recs.filter(r => !r.proxy), nf = full.length;
     return {
         st, recs, n,
-        secs: S.cfg.criteria.map(sec => avg(r => secSum(sec, r.items))),
+        secs: S.cfg.criteria.map(sec => nf ? full.reduce((a, r) => a + secSum(sec, r.items), 0) / nf : null),
         avg: avg(recTotal)
     };
 }
@@ -563,13 +567,62 @@ function adminResults(el) {
     el.querySelectorAll("tr.clk").forEach(tr => tr.onclick = () => { S.open = S.open === tr.dataset.sid ? null : tr.dataset.sid; adminResults(el); });
 }
 
+// ผู้ดูแลกรอกคะแนนรวมแทนกรรมการที่ประเมินแบบกระดาษ — 1 ช่องต่อกรรมการ (เต็ม fullMax)
+// กรรมการที่ส่งในระบบแล้วจะแก้ไม่ได้ · เว้นว่างแล้วบันทึก = ลบคะแนนที่กรอกแทนไว้
+function adminProxy(el) {
+    const g = graders().filter(t => canGrade(t)), max = fullMax();
+    const sts = S.cfg.students.filter(s => S.aday === "all" || s.date === S.aday);
+    if (S.pxsid && !S.cfg.students.some(s => s.sid === S.pxsid)) S.pxsid = null;
+    const st = S.cfg.students.find(s => s.sid === S.pxsid);
+    const recOf = tid => st ? S.all.find(r => r.sid === st.sid && r.tid === tid) : null;
+    const done = st ? g.filter(t => recOf(t.id)).length : 0;
+    el.innerHTML = `
+      <div class="toolbar">
+        <select class="btn sm" id="aday"><option value="all">ทุกวัน</option>${S.cfg.days.map(d => `<option value="${d.date}" ${S.aday === d.date ? "selected" : ""}>${esc(d.label)}</option>`).join("")}</select>
+        <select class="btn sm" id="pxs" style="max-width:100%"><option value="">— เลือกผู้นำเสนอ —</option>
+          ${sts.map(s => `<option value="${esc(s.sid)}" ${S.pxsid === s.sid ? "selected" : ""}>${S.aday === "all" ? s.date.slice(8) + "/ " : ""}${s.no}. ${esc(s.name)}</option>`).join("")}</select>
+      </div>
+      ${st ? `<div class="card"><h2>${esc(st.name)}</h2><div class="tp small muted" style="margin-bottom:10px">${esc(st.topic)}</div>
+        <p class="small muted" style="margin-top:0">กรอกคะแนนรวมเต็ม ${fmt(max)} ต่อกรรมการ 1 ช่อง (ทศนิยมได้เฉพาะ .5) — กรรมการที่ประเมินในระบบแล้วจะแก้ไม่ได้ ·
+          คะแนนเฉลี่ยหารด้วยจำนวนกรรมการที่ให้คะแนนจริง (<b>${done}</b> จาก ${g.length} ท่าน)</p>
+        ${g.map(t => {
+            const r = recOf(t.id);
+            if (r && !r.proxy) return `<div class="lock"><div><b>${esc(t.name)}</b><div class="small muted">ประเมินในระบบแล้ว</div></div><b>${fmt(recTotal(r))} / ${fmt(max)}</b></div>`;
+            return `<div class="lock"><div><b>${esc(t.name)}</b><div class="small muted">${r ? "ผู้ดูแลกรอกแทนไว้แล้ว" : "ยังไม่มีคะแนน"}</div></div>
+              <div><input type="number" class="btn sm pxin" data-tid="${esc(t.id)}" data-old="${r ? recTotal(r) : ""}" min="0" max="${max}" step="0.5" inputmode="decimal" style="width:90px;text-align:right" value="${r ? recTotal(r) : ""}"> / ${fmt(max)}</div></div>`;
+        }).join("") || `<p class="muted">ยังไม่มีอาจารย์ผู้ประเมิน</p>`}
+        <div class="toolbar" style="margin:12px 0 0"><span class="sp"></span><button class="btn sm primary" id="pxsave">บันทึก</button></div></div>` : `<p class="muted">เลือกผู้นำเสนอเพื่อกรอกคะแนนแทนกรรมการ</p>`}`;
+    el.querySelector("#aday").onchange = e => { S.aday = e.target.value; S.pxDirty = false; adminProxy(el); };
+    el.querySelector("#pxs").onchange = e => { S.pxsid = e.target.value || null; S.pxDirty = false; adminProxy(el); };
+    el.querySelectorAll(".pxin").forEach(i => i.oninput = () => { S.pxDirty = true; });
+    const sv = el.querySelector("#pxsave");
+    if (sv) sv.onclick = async () => {
+        const ch = [...el.querySelectorAll(".pxin")].filter(i => i.value.trim() !== i.dataset.old);
+        if (!ch.length) return toast("ไม่มีการเปลี่ยนแปลง");
+        for (const i of ch) {
+            const v = i.value.trim();
+            if (v !== "" && !(Number(v) >= 0 && Number(v) <= max && Number(v) * 2 === Math.floor(Number(v) * 2)))
+                return toast(`คะแนนต้องอยู่ระหว่าง 0–${fmt(max)} (ทศนิยมได้เฉพาะ .5)`, true);
+        }
+        sv.disabled = true;
+        try {
+            for (const i of ch) {
+                const v = i.value.trim();
+                await API.saveProxyScore(st.sid, i.dataset.tid, v === "" ? null : Number(v), max);
+            }
+            S.pxDirty = false; toast("บันทึกคะแนนแล้ว");
+        } catch (e) { toast(errMsg(e), true); }
+        sv.disabled = false;
+    };
+}
+
 function detail(r, tname) {
     if (!r.recs.length) return `<p class="muted" style="padding:10px 14px;margin:0">ยังไม่มีคะแนน</p>`;
     const its = items();
     return `<div class="tscroll"><table class="sub-t"><thead><tr><th>ผู้ประเมิน</th>
       ${its.map((it, i) => `<th title="${esc(it.text)}">ข้อ ${i + 1}<br><span class="muted" style="font-weight:400">/${it.max}</span></th>`).join("")}
       <th>รวม</th></tr></thead><tbody>
-      ${r.recs.map(x => `<tr><td>${esc(tname[x.tid] || x.tid)}</td>${its.map(it => `<td>${fmt(x.items[it.id])}</td>`).join("")}<td><b>${fmt(recTotal(x))}</b></td></tr>
+      ${r.recs.map(x => `<tr><td>${esc(tname[x.tid] || x.tid)}${x.proxy ? ` <span class="small muted">(ผู้ดูแลกรอกแทน)</span>` : ""}</td>${x.proxy ? `<td colspan="${its.length}" class="muted">กระดาษ — มีเฉพาะคะแนนรวม</td>` : its.map(it => `<td>${fmt(x.items[it.id])}</td>`).join("")}<td><b>${fmt(recTotal(x))}</b></td></tr>
         ${x.comment ? `<tr><td class="cm" colspan="${its.length + 2}">💬 ${esc(x.comment)}</td></tr>` : ""}`).join("")}
       </tbody></table></div>`;
 }
@@ -593,7 +646,7 @@ function exportXlsx() {
     const det = [["วันที่", "ลำดับ", "รหัสนักศึกษา", "ชื่อ-นามสกุล", "ผู้ประเมิน",
         ...its.map((it, i) => `ข้อ ${i + 1} (${it.max})`), ...C.map((c, i) => `ส่วนที่ ${i + 1}`), "รวม", "ข้อเสนอแนะ", "เวลาบันทึก"]];
     S.cfg.students.forEach(s => (by[s.sid] || []).forEach(x => det.push([dayLabel(s.date), s.no, s.sid, s.name, tname[x.tid] || x.tid,
-        ...its.map(it => x.items[it.id]), ...C.map(c => secSum(c, x.items)), recTotal(x), x.comment || "",
+        ...its.map(it => x.proxy ? "" : x.items[it.id]), ...C.map(c => x.proxy ? "" : secSum(c, x.items)), recTotal(x), x.proxy ? "(ผู้ดูแลกรอกแทน — ประเมินแบบกระดาษ)" : x.comment || "",
         new Date(x.updatedAt).toLocaleString("th-TH")])));
 
     const crit = [["ส่วน", "ข้อ", "รายการ", "คะแนนเต็ม"]];
